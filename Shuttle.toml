@@ -1,0 +1,5 @@
+[build]
+assets = []
+
+[deploy]
+shuttle-name = "fodifood-bot"

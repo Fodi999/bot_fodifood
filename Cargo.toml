@@ -1,0 +1,50 @@
+[package]
+name = "fodifood-bot"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Shuttle runtime - обновлено до 0.57 для совместимости с CLI
+shuttle-runtime = "0.57.0"
+shuttle-axum = "0.57.0"
+
+# Web framework - axum 0.8 для совместимости с shuttle-axum 0.57
+axum = { version = "0.8", features = ["macros", "ws", "json"] }
+tokio = { version = "1", features = ["full"] }
+tower = "0.4"
+tower-http = { version = "0.5", features = ["cors"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# HTTP client
+reqwest = { version = "0.12", features = ["json"] }
+
+# WebSocket - удален axum-extra, используем shuttle_axum::axum
+futures = "0.3"
+futures-util = "0.3"
+
+# JWT
+jsonwebtoken = "9"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Environment
+dotenvy = "0.15"
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Time
+chrono = { version = "0.4", features = ["serde"] }
+
+# Async utilities
+dashmap = "6.0"
+uuid = { version = "1.0", features = ["v4"] }
+
+# Random (для живости бота)
+rand = "0.8"
