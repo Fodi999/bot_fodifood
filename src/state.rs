@@ -9,6 +9,9 @@ use crate::models::user::UserRole;
 use crate::metrics::MetricsCollector; // 📊 Metrics
 use crate::handlers::InsightBroadcaster; // 📡 WebSocket Insights
 
+// Import orchestrator
+use crate::orchestration::BackendOrchestrator;
+
 pub type ClientId = String;
 
 #[derive(Clone)]
@@ -20,6 +23,7 @@ pub struct AppState {
     pub ai: Arc<AIEngine>, // 🧠 AI движок
     pub metrics: Arc<MetricsCollector>, // 📊 Metrics collector
     pub insight_broadcaster: InsightBroadcaster, // 📡 AI Insight broadcaster
+    pub backend_orchestrator: Option<Arc<BackendOrchestrator>>, // 🎯 Backend lifecycle manager
 }
 
 pub struct ClientConnection {
@@ -43,6 +47,7 @@ impl AppState {
             ai, // 🧠 Добавляем AI
             metrics, // 📊 Добавляем metrics
             insight_broadcaster, // 📡 Добавляем insight broadcaster
+            backend_orchestrator: None, // 🎯 Оркестратор добавляется опционально
         }
     }
 

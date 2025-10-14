@@ -53,6 +53,13 @@ async fn main() {
         .route("/api/v1/admin/users", get(api::rest::get_admin_users))
         .route("/api/v1/admin/ws", get(api::admin_ws::admin_ws_handler))
         
+        // 🎯 Backend Control Endpoints
+        .route("/api/v1/admin/backend/start", post(api::backend_control::start_backend))
+        .route("/api/v1/admin/backend/stop", post(api::backend_control::stop_backend))
+        .route("/api/v1/admin/backend/restart", post(api::backend_control::restart_backend))
+        .route("/api/v1/admin/backend/status", get(api::backend_control::get_backend_status))
+        .route("/api/v1/admin/backend/health", get(api::backend_control::backend_orchestrator_health))
+        
         // 📊 Metrics Endpoints
         .route("/metrics", get(api::metrics::prometheus_metrics))
         .route("/admin/metrics", get(api::metrics::metrics_dashboard))
