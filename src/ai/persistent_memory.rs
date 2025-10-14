@@ -20,10 +20,12 @@ pub struct ConversationEntry {
 }
 
 /// Persistent memory backend using sled
+#[allow(dead_code)] // Part of v2.2 infrastructure - will be used for persistent context storage
 pub struct PersistentMemory {
     db: sled::Db,
 }
 
+#[allow(dead_code)] // All methods will be used when persistent storage is integrated
 impl PersistentMemory {
     /// Create a new persistent memory instance
     ///

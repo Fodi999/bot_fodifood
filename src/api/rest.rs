@@ -48,6 +48,7 @@ pub struct SearchQuery {
 #[derive(Debug, Deserialize)]
 pub struct RecommendationRequest {
     pub user_id: String,
+    #[allow(dead_code)] // Will be used for filtering recommendations
     pub preferences: Option<Vec<String>>,
 }
 

@@ -76,6 +76,7 @@ impl MetricsCollector {
     }
 
     /// Record an error in intent handling
+    #[allow(dead_code)] // Will be used when error handling is enhanced
     pub fn record_error(&self, intent: &str) {
         self.error_counts
             .entry(intent.to_string())
@@ -244,7 +245,6 @@ impl Default for MetricsCollector {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::thread;
 
     #[test]
     fn test_intent_counting() {

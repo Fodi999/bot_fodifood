@@ -58,6 +58,7 @@ impl AdminClient {
     }
 
     /// Create new ingredient (admin only)
+    #[allow(dead_code)] // Will be used in v2.2 Step 5 Admin AI Assistant
     pub async fn create_ingredient(&self, token: &str, data: Value) -> Result<Ingredient> {
         let url = format!("{}/admin/ingredients", self.base_url);
 
@@ -79,6 +80,7 @@ impl AdminClient {
     }
 
     /// Update ingredient (admin only)
+    #[allow(dead_code)]
     pub async fn update_ingredient(&self, token: &str, id: i64, data: Value) -> Result<Ingredient> {
         let url = format!("{}/admin/ingredients/{}", self.base_url, id);
 
@@ -100,6 +102,7 @@ impl AdminClient {
     }
 
     /// Delete ingredient (admin only)
+    #[allow(dead_code)]
     pub async fn delete_ingredient(&self, token: &str, id: i64) -> Result<()> {
         let url = format!("{}/admin/ingredients/{}", self.base_url, id);
 
@@ -114,6 +117,7 @@ impl AdminClient {
     }
 
     /// Get ingredient movements (admin only)
+    #[allow(dead_code)]
     pub async fn get_ingredient_movements(
         &self,
         token: &str,

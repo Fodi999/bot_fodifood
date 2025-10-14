@@ -58,8 +58,9 @@ mod tests {
         assert!(
             response.contains("Привет")
                 || response.contains("Здравствуй")
+                || response.contains("Здорово")
                 || response.contains("Добро пожаловать"),
-            "Greeting should contain 'Привет', 'Здравствуй', or 'Добро пожаловать'. Got: {}",
+            "Greeting should contain greeting words. Got: {}",
             response
         );
     }

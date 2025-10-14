@@ -63,8 +63,9 @@ async fn main() -> ShuttleAxum {
             post(api::rest::get_recommendations),
         )
         .route("/api/v1/intents/{text}", get(api::rest::detect_intent))
-        // 🔌 WebSocket & Webhooks (legacy)
+        // 🔌 WebSocket & Webhooks
         .route("/ws", get(handlers::ws::websocket_handler))
+        .route("/api/v1/insight", get(api::insight_ws::ai_insight_ws)) // 📡 AI Insights
         .route("/notify", post(handlers::webhook::webhook_handler))
         .layer(CorsLayer::permissive())
         .with_state(state);

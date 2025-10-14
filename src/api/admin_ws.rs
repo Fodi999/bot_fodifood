@@ -101,6 +101,7 @@ async fn handle_admin_socket(mut socket: WebSocket) {
 }
 
 /// Health check для WebSocket (fallback для GET запросов)
+#[allow(dead_code)] // Used as fallback endpoint for WebSocket health checks
 pub async fn admin_ws_health() -> impl IntoResponse {
     (
         StatusCode::OK,

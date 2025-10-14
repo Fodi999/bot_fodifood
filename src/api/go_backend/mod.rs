@@ -86,12 +86,18 @@ impl GoBackendClient {
         self.orders.create_order(order_data).await
     }
 
+    // ========================================
+    // Admin Service Methods (Future Use)
+    // ========================================
+
     /// Get ingredients (delegates to admin service)
+    #[allow(dead_code)] // Admin methods will be used in v2.2 Step 5
     pub async fn get_ingredients(&self, token: &str) -> anyhow::Result<Vec<Ingredient>> {
         self.admin.get_ingredients(token).await
     }
 
     /// Create ingredient (delegates to admin service)
+    #[allow(dead_code)]
     pub async fn create_ingredient(
         &self,
         token: &str,
@@ -101,6 +107,7 @@ impl GoBackendClient {
     }
 
     /// Update ingredient (delegates to admin service)
+    #[allow(dead_code)]
     pub async fn update_ingredient(
         &self,
         token: &str,
@@ -111,11 +118,13 @@ impl GoBackendClient {
     }
 
     /// Delete ingredient (delegates to admin service)
+    #[allow(dead_code)]
     pub async fn delete_ingredient(&self, token: &str, id: i64) -> anyhow::Result<()> {
         self.admin.delete_ingredient(token, id).await
     }
 
     /// Get ingredient movements (delegates to admin service)
+    #[allow(dead_code)]
     pub async fn get_ingredient_movements(
         &self,
         token: &str,
@@ -130,6 +139,7 @@ impl GoBackendClient {
     }
 
     /// Update user (delegates to auth service)
+    #[allow(dead_code)]
     pub async fn update_user(
         &self,
         token: &str,
@@ -140,6 +150,7 @@ impl GoBackendClient {
     }
 
     /// Delete user (delegates to auth service)
+    #[allow(dead_code)]
     pub async fn delete_user(&self, token: &str, id: &str) -> anyhow::Result<()> {
         self.auth.delete_user(token, id).await
     }
@@ -150,6 +161,7 @@ impl GoBackendClient {
     }
 
     /// Update order status admin (delegates to orders service)
+    #[allow(dead_code)]
     pub async fn update_order_status_admin(
         &self,
         token: &str,

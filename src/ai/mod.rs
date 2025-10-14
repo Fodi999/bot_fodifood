@@ -10,10 +10,9 @@ use crate::api::go_backend::GoBackendClient;
 use crate::config::Config;
 use anyhow::Result;
 
-pub use intent_handler::{IntentContext, IntentHandler, IntentRegistry};
+pub use intent_handler::{IntentHandler, IntentRegistry};
 pub use intents::{Intent, IntentClassifier};
 pub use memory::BotMemory;
-pub use persistent_memory::PersistentMemory; // Export persistent memory
 pub use rules::ResponseGenerator;
 pub use thinker::Thinker; // Экспортируем для внешнего использования
 
@@ -21,6 +20,7 @@ pub use thinker::Thinker; // Экспортируем для внешнего и
 pub struct AIEngine {
     memory: BotMemory,
     backend: GoBackendClient,
+    #[allow(dead_code)] // Used by process_with_plugins and process_with_insights
     intent_registry: IntentRegistry, // 🎯 Plugin system registry
 }
 
@@ -376,6 +376,7 @@ impl AIEngine {
 
     /// 🎯 Process message using new plugin system
     /// This is the new recommended way to process messages
+    #[allow(dead_code)] // Will be used when we migrate webhook handler
     pub async fn process_with_plugins(
         &self,
         user_id: &str,
@@ -433,11 +434,175 @@ impl AIEngine {
     }
 
     /// Get registry stats (for debugging/monitoring)
+    #[allow(dead_code)] // Used for monitoring and debugging
     pub fn registry_stats(&self) -> (usize, Vec<String>) {
         (
             self.intent_registry.count(),
             self.intent_registry.registered_handlers(),
         )
+    }
+
+    /// Process message with plugin system AND broadcast insight events
+    ///
+    /// This is an enhanced version of process_with_plugins that also broadcasts
+    /// real-time AI processing events via WebSocket for frontend visibility.
+    ///
+    /// # Arguments
+    /// * `user_id` - User identifier
+    /// * `message` - User message
+    /// * `state` - Application state (includes insight broadcaster)
+    ///
+    /// # Returns
+    /// * `Result<String>` - AI response
+    #[allow(dead_code)] // Will be used when webhook handler is migrated to new system
+    pub async fn process_with_insights(
+        &self,
+        user_id: &str,
+        message: &str,
+        state: &crate::state::AppState,
+    ) -> Result<String> {
+        use crate::handlers::{AIInsightEvent, ExtractedEntity};
+        use std::collections::HashMap;
+
+        let start_time = std::time::Instant::now();
+
+        // 📡 Event: Classification started
+        state.insight_broadcaster.broadcast(
+            AIInsightEvent::classification_started(user_id.to_string(), message.to_string())
+        );
+
+        // 🎯 Classify intent
+        let intent = IntentClassifier::classify(message);
+        let intent_str = format!("{:?}", intent);
+
+        // 📡 Event: Intent classified
+        state.insight_broadcaster.broadcast(
+            AIInsightEvent::classified(
+                user_id.to_string(),
+                intent_str.clone(),
+                0.85, // TODO: Add real confidence scoring
+                start_time.elapsed().as_millis() as u64,
+            )
+        );
+
+        // 🧩 Extract entities
+        let entities = match intent {
+            Intent::SearchByIngredient => {
+                vec![ExtractedEntity {
+                    entity_type: "ingredient".to_string(),
+                    value: IntentClassifier::extract_ingredient(message),
+                    confidence: 0.9,
+                }]
+            }
+            Intent::OrderStatus => {
+                if let Some(order_id) = IntentClassifier::extract_order_id(message) {
+                    vec![ExtractedEntity {
+                        entity_type: "order_id".to_string(),
+                        value: order_id,
+                        confidence: 0.95,
+                    }]
+                } else {
+                    vec![]
+                }
+            }
+            Intent::ProductInfo => {
+                if let Some(product) = IntentClassifier::extract_product_name(message) {
+                    vec![ExtractedEntity {
+                        entity_type: "product_name".to_string(),
+                        value: product,
+                        confidence: 0.85,
+                    }]
+                } else {
+                    vec![]
+                }
+            }
+            _ => vec![],
+        };
+
+        // 📡 Event: Entity extraction
+        if !entities.is_empty() {
+            state.insight_broadcaster.broadcast(
+                AIInsightEvent::entity_extraction(user_id.to_string(), entities.clone())
+            );
+        }
+
+        // Create context
+        let entity_strings: Vec<String> = entities.iter().map(|e| e.value.clone()).collect();
+        let mut ctx = intent_handler::Context::new(
+            user_id.to_string(),
+            message.to_string(),
+            intent_str.clone(),
+        ).with_entities(entity_strings);
+
+        // 📡 Event: Context updated
+        let mut metadata = HashMap::new();
+        metadata.insert("intent".to_string(), intent_str.clone());
+        metadata.insert("entity_count".to_string(), entities.len().to_string());
+        
+        state.insight_broadcaster.broadcast(
+            AIInsightEvent::context_updated(
+                user_id.to_string(),
+                ctx.metadata.len(),
+                metadata,
+            )
+        );
+
+        // 📡 Event: Handler routing
+        let handlers = self.intent_registry.registered_handlers();
+        state.insight_broadcaster.broadcast(
+            AIInsightEvent::handler_routing(
+                user_id.to_string(),
+                intent_str.clone(),
+                handlers.clone(),
+            )
+        );
+
+        // Route through registry
+        let handler_start = std::time::Instant::now();
+        
+        // Find matching handler
+        let handler_name = handlers.iter()
+            .find(|h| h.to_lowercase().contains(&intent_str.to_lowercase()))
+            .cloned()
+            .unwrap_or_else(|| "unknown".to_string());
+
+        // 📡 Event: Handler execution started
+        state.insight_broadcaster.broadcast(
+            AIInsightEvent::handler_started(
+                user_id.to_string(),
+                handler_name.clone(),
+                100, // TODO: Get real priority from handler
+            )
+        );
+
+        let response = self.intent_registry.handle(message, &mut ctx, state).await;
+
+        // 📡 Event: Handler execution completed
+        state.insight_broadcaster.broadcast(
+            AIInsightEvent::handler_completed(
+                user_id.to_string(),
+                handler_name,
+                !response.contains("🤔"), // Success if not confused
+                response.chars().count(),
+                handler_start.elapsed().as_millis() as u64,
+            )
+        );
+
+        // 📊 Record metrics
+        state.metrics.record_intent(&intent_str);
+        state.metrics.record_response_time(&intent_str, start_time.elapsed());
+        state.metrics.record_success(&intent_str);
+
+        // 📡 Event: Processing completed
+        state.insight_broadcaster.broadcast(
+            AIInsightEvent::processing_completed(
+                user_id.to_string(),
+                start_time.elapsed().as_millis() as u64,
+                1, // handlers invoked
+            )
+        );
+
+        Ok(response)
     }
 }
 

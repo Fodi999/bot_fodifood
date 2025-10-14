@@ -5,6 +5,7 @@ use crate::state::AppState;
 
 /// 🎯 Unified Context for intent handling
 #[derive(Debug, Clone)]
+#[allow(dead_code)] // Fields are used by handlers, but rustc doesn't always detect it
 pub struct Context {
     pub user_id: String,
     pub message: String,
@@ -15,6 +16,7 @@ pub struct Context {
     // We'll pass AppState separately to avoid large clones
 }
 
+#[allow(dead_code)] // Methods are used in AI processing pipeline
 impl Context {
     pub fn new(user_id: String, message: String, intent: String) -> Self {
         Self {
@@ -42,6 +44,7 @@ impl Context {
 }
 
 // Alias for backward compatibility
+#[allow(dead_code)]
 pub type IntentContext = Context;
 
 /// 🧠 Intent Handler trait - implement this for each intent type
@@ -60,6 +63,7 @@ pub type IntentContext = Context;
 /// }
 /// ```
 #[async_trait]
+#[allow(dead_code)] // Trait is used by all handler implementations
 pub trait IntentHandler: Send + Sync {
     /// Get the handler name (usually matches intent name)
     fn name(&self) -> &'static str;
@@ -111,6 +115,7 @@ impl IntentRegistry {
     }
 
     /// Handle an intent using registered handlers
+    #[allow(dead_code)] // Used by AI engine's process_with_plugins and process_with_insights
     pub async fn handle(&self, input: &str, ctx: &mut Context, state: &AppState) -> String {
         let start = std::time::Instant::now();
         tracing::debug!(target: "ai", "🔍 Looking for handler for intent: {}", ctx.intent);

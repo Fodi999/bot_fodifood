@@ -7,6 +7,7 @@ use crate::api::go_backend::GoBackendClient;
 use crate::config::Config;
 use crate::models::user::UserRole;
 use crate::metrics::MetricsCollector; // 📊 Metrics
+use crate::handlers::InsightBroadcaster; // 📡 WebSocket Insights
 
 pub type ClientId = String;
 
@@ -18,6 +19,7 @@ pub struct AppState {
     pub backend: Arc<GoBackendClient>,
     pub ai: Arc<AIEngine>, // 🧠 AI движок
     pub metrics: Arc<MetricsCollector>, // 📊 Metrics collector
+    pub insight_broadcaster: InsightBroadcaster, // 📡 AI Insight broadcaster
 }
 
 pub struct ClientConnection {
@@ -32,6 +34,7 @@ impl AppState {
         let backend = Arc::new(GoBackendClient::new(&config));
         let ai = Arc::new(AIEngine::new(&config)); // 🧠 Создаём AI с config
         let metrics = Arc::new(MetricsCollector::new()); // 📊 Создаём metrics
+        let insight_broadcaster = InsightBroadcaster::new(); // 📡 Создаём broadcaster
 
         Self {
             config,
@@ -39,6 +42,7 @@ impl AppState {
             backend,
             ai, // 🧠 Добавляем AI
             metrics, // 📊 Добавляем metrics
+            insight_broadcaster, // 📡 Добавляем insight broadcaster
         }
     }
 
