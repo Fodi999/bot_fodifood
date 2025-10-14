@@ -8,7 +8,7 @@ pub enum UserRole {
     Manager,
     Courier,
     Cook,
-    User,  // Добавлено для совместимости с Go backend
+    User, // Добавлено для совместимости с Go backend
 }
 
 impl UserRole {

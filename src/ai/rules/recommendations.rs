@@ -2,10 +2,10 @@
 
 pub fn recommendation_response(context: Option<&str>) -> String {
     let base_recommendation = "🌟 **Что я посоветую из нашего меню:**\n\n";
-    
+
     if let Some(ctx) = context {
         let ctx_lower = ctx.to_lowercase();
-        
+
         // 🌶️ Острые блюда
         if ctx_lower.contains("острое") || ctx_lower.contains("spicy") {
             return format!(
@@ -18,9 +18,13 @@ pub fn recommendation_response(context: Option<&str>) -> String {
                 base_recommendation
             );
         }
-        
+
         // 🥗 ПП и диета
-        if ctx_lower.contains("диета") || ctx_lower.contains("пп") || ctx_lower.contains("легкое") || ctx_lower.contains("healthy") {
+        if ctx_lower.contains("диета")
+            || ctx_lower.contains("пп")
+            || ctx_lower.contains("легкое")
+            || ctx_lower.contains("healthy")
+        {
             return format!(
                 "{}💪 **ПП-меню для тех кто следит за фигурой:**\n\
                  • Лосось на пару с брокколи (350 ккал) — белок + витамины\n\
@@ -31,9 +35,12 @@ pub fn recommendation_response(context: Option<&str>) -> String {
                 base_recommendation
             );
         }
-        
+
         // 🎉 Праздник и компания
-        if ctx_lower.contains("праздник") || ctx_lower.contains("компания") || ctx_lower.contains("party") {
+        if ctx_lower.contains("праздник")
+            || ctx_lower.contains("компания")
+            || ctx_lower.contains("party")
+        {
             return format!(
                 "{}� **Для компании — берите побольше!**\n\
                  • Большая паэлья (на 4-6 человек) 🥘 — всем хватит!\n\
@@ -44,7 +51,7 @@ pub fn recommendation_response(context: Option<&str>) -> String {
                 base_recommendation
             );
         }
-        
+
         // 🦐 Любимые креветки
         if ctx_lower.contains("shrimp") || ctx_lower.contains("креветки") {
             return format!(
@@ -57,7 +64,7 @@ pub fn recommendation_response(context: Option<&str>) -> String {
                 base_recommendation
             );
         }
-        
+
         // 🐟 Любимый лосось
         if ctx_lower.contains("salmon") || ctx_lower.contains("лосось") {
             return format!(
@@ -70,7 +77,7 @@ pub fn recommendation_response(context: Option<&str>) -> String {
                 base_recommendation
             );
         }
-        
+
         // 🌱 Вегетарианское
         if ctx_lower.contains("vegetarian") || ctx_lower.contains("вегетариан") {
             return format!(
@@ -84,7 +91,7 @@ pub fn recommendation_response(context: Option<&str>) -> String {
             );
         }
     }
-    
+
     // Общие рекомендации (если нет контекста)
     format!(
         "{}• **Средиземноморская паэлья** 🥘 — абсолютный хит! Все её обожают\n\

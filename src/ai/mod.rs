@@ -1,125 +1,344 @@
+pub mod intent_handler; // 🎯 Intent handler system
 mod intents;
-mod rules;
 mod memory;
-mod thinker;  // 🧠 Новый когнитивный модуль
+pub mod modules;
+pub mod persistent_memory; // 💾 Persistent memory service
+mod rules;
+mod thinker; // 🧠 Новый когнитивный модуль // 📦 Modular intent handlers
 
-use anyhow::Result;
+use crate::api::go_backend::GoBackendClient;
 use crate::config::Config;
-use crate::api::go_backend;
+use anyhow::Result;
 
+pub use intent_handler::{IntentContext, IntentHandler, IntentRegistry};
 pub use intents::{Intent, IntentClassifier};
-pub use rules::ResponseGenerator;
 pub use memory::BotMemory;
-pub use thinker::Thinker;  // Экспортируем для внешнего использования
+pub use persistent_memory::PersistentMemory; // Export persistent memory
+pub use rules::ResponseGenerator;
+pub use thinker::Thinker; // Экспортируем для внешнего использования
 
 /// Главный AI движок бота
 pub struct AIEngine {
     memory: BotMemory,
+    backend: GoBackendClient,
+    intent_registry: IntentRegistry, // 🎯 Plugin system registry
 }
 
 impl AIEngine {
     /// Создать новый AI движок
-    pub fn new() -> Self {
+    pub fn new(config: &Config) -> Self {
+        // 🎯 Initialize plugin system registry
+        let mut registry = IntentRegistry::new();
+        modules::register_all_handlers(&mut registry);
+        
+        tracing::info!("🚀 AIEngine initialized with {} intent handlers", registry.count());
+        
         Self {
             memory: BotMemory::new(),
+            backend: GoBackendClient::new(config),
+            intent_registry: registry,
         }
     }
-    
+
     /// Получить доступ к памяти
     #[allow(dead_code)]
     pub fn memory(&self) -> &BotMemory {
         &self.memory
     }
-    
+
+    /// Получить доступ к backend клиенту
+    #[allow(dead_code)]
+    pub fn backend(&self) -> &GoBackendClient {
+        &self.backend
+    }
+
     /// 👤 Установить имя пользователя в память (вызывается при авторизации)
     pub async fn set_user_name(&self, user_id: &str, name: String) {
         self.memory.set_user_name(user_id, name).await;
     }
-    
+
     /// 👤 Получить имя пользователя из памяти
-    #[allow(dead_code)]  // Используется через WhoAmI intent
+    #[allow(dead_code)] // Используется через WhoAmI intent
     pub async fn get_user_name(&self, user_id: &str) -> Option<String> {
         self.memory.get_user_name(user_id).await
     }
-    
+
     /// Обработать сообщение и сгенерировать ответ
-    pub async fn process_message(
-        &self,
-        user_id: &str,
-        message: &str,
-    ) -> Result<String> {
+    pub async fn process_message(&self, user_id: &str, message: &str) -> Result<String> {
         // 💬 ПРОВЕРКА: Светская беседа (smalltalk) — обрабатываем первыми
         if let Some(smalltalk_reply) = rules::smalltalk::respond(message) {
             self.memory.add_message(user_id, message.to_string()).await;
             return Ok(smalltalk_reply);
         }
-        
+
         // 🧠 КОГНИТИВНЫЙ АНАЛИЗ: Определяем настроение и эмоции
         let mood = Thinker::detect_mood(message);
         let emotion = Thinker::extract_emotion(message);
         let conversation_type = Thinker::detect_conversation_type(message);
-        let complexity = Thinker::analyze_complexity(message);  // 🧮 Анализ сложности
-        
+        let complexity = Thinker::analyze_complexity(message); // 🧮 Анализ сложности
+
         tracing::info!(
-            "🧠 Cognitive: mood={}, emotion={:?}, type={}, complexity={}", 
-            mood, emotion, conversation_type, complexity
+            "🧠 Cognitive: mood={}, emotion={:?}, type={}, complexity={}",
+            mood,
+            emotion,
+            conversation_type,
+            complexity
         );
-        
+
         // ❤️ СОХРАНЯЕМ ЭМОЦИОНАЛЬНОЕ СОСТОЯНИЕ в память
-        self.memory.set_emotional_state(user_id, mood, emotion).await;
-        
+        self.memory
+            .set_emotional_state(user_id, mood, emotion)
+            .await;
+
         // 📝 Извлекаем и сохраняем предпочтения автоматически
-        self.memory.extract_and_save_preferences(user_id, message).await;
-        
+        self.memory
+            .extract_and_save_preferences(user_id, message)
+            .await;
+
         // Сохраняем сообщение в историю
         self.memory.add_message(user_id, message.to_string()).await;
-        
+
         // Классифицируем намерение
         let intent = IntentClassifier::classify(message);
-        
+
+        // 🔍 Логируем интент для отладки
+        tracing::info!("🧠 Detected Intent: {:?} for message: {}", intent, message);
+
         // Сохраняем намерение
-        self.memory.set_last_intent(user_id, format!("{:?}", intent)).await;
-        
+        self.memory
+            .set_last_intent(user_id, format!("{:?}", intent))
+            .await;
+
+        // 🔥 ИНТЕГРАЦИЯ С GO BACKEND - проверяем специальные интенты
+        match intent {
+            // 🍽️ ViewMenu - загружаем реальное меню
+            Intent::ViewMenu => {
+                tracing::info!("🍽️ AIEngine: ViewMenu detected - fetching real menu");
+                match self.backend.get_products().await {
+                    Ok(products) => {
+                        let formatted = GoBackendClient::format_products_list(&products);
+                        tracing::info!("✅ AIEngine: Loaded {} products", products.len());
+                        return Ok(formatted);
+                    }
+                    Err(e) => {
+                        tracing::error!("❌ AIEngine: Failed to load menu: {}", e);
+                        // Продолжаем с fallback ответом
+                    }
+                }
+            }
+
+            // 🔍 ProductSearch - фильтруем продукты по ингредиенту
+            Intent::ProductSearch => {
+                if let Some(ingredient) = Thinker::extract_ingredient(message) {
+                    tracing::info!("🔍 AIEngine: ProductSearch for: {}", ingredient);
+                    match self.backend.get_products().await {
+                        Ok(products) => {
+                            let filtered =
+                                GoBackendClient::filter_by_ingredient(&products, &ingredient);
+                            if !filtered.is_empty() {
+                                use crate::api::go_backend::Product;
+                                let filtered_products: Vec<Product> =
+                                    filtered.iter().map(|&p| p.clone()).collect();
+                                let response = format!(
+                                    "🔍 **Нашёл {} блюд с \"{}\":**\n\n{}",
+                                    filtered_products.len(),
+                                    ingredient,
+                                    GoBackendClient::format_products_list(&filtered_products)
+                                );
+                                tracing::info!(
+                                    "✅ AIEngine: Found {} products",
+                                    filtered_products.len()
+                                );
+                                return Ok(response);
+                            }
+                        }
+                        Err(e) => {
+                            tracing::error!("❌ AIEngine: Failed to search products: {}", e);
+                        }
+                    }
+                }
+            }
+
+            // ℹ️ ProductInfo - показываем детали продукта
+            Intent::ProductInfo => {
+                if let Some(product_name) = Thinker::extract_product(message) {
+                    tracing::info!("ℹ️ AIEngine: ProductInfo for: {}", product_name);
+                    match self.backend.get_products().await {
+                        Ok(products) => {
+                            if let Some(product) =
+                                GoBackendClient::find_product_by_name(&products, &product_name)
+                            {
+                                let response = format!(
+                                    "ℹ️ **{}**\n\n\
+                                     💰 **Цена:** {}₽\n\
+                                     📦 **Вес/Объём:** {}\n\
+                                     📋 **Описание:** {}\n\
+                                     🏷️ **Категория:** {}\n\n\
+                                     💡 Хочешь заказать? Просто скажи \"беру\" или \"закажу {}\"!",
+                                    product.name,
+                                    product.price as i32,
+                                    product.weight.as_deref().unwrap_or("—"),
+                                    product
+                                        .description
+                                        .as_deref()
+                                        .unwrap_or("Вкуснейшее блюдо из свежих ингредиентов"),
+                                    product.category.as_deref().unwrap_or("Другое"),
+                                    product.name
+                                );
+                                tracing::info!("✅ AIEngine: Found product: {}", product.name);
+                                return Ok(response);
+                            }
+                        }
+                        Err(e) => {
+                            tracing::error!("❌ AIEngine: Failed to get product info: {}", e);
+                        }
+                    }
+                }
+            }
+
+            // 💰 PriceInquiry - показываем цены
+            Intent::PriceInquiry => {
+                tracing::info!("💰 AIEngine: PriceInquiry detected");
+                match self.backend.get_products().await {
+                    Ok(products) => {
+                        let response = format!(
+                            "💰 **Актуальные цены:**\n\n{}",
+                            GoBackendClient::format_products_list(&products)
+                        );
+                        tracing::info!(
+                            "✅ AIEngine: Loaded prices for {} products",
+                            products.len()
+                        );
+                        return Ok(response);
+                    }
+                    Err(e) => {
+                        tracing::error!("❌ AIEngine: Failed to load prices: {}", e);
+                    }
+                }
+            }
+
+            // 🐟 SearchByIngredient - поиск блюд по конкретному ингредиенту
+            Intent::SearchByIngredient => {
+                tracing::info!("🐟 AIEngine: SearchByIngredient detected");
+
+                // 🎯 Используем IntentClassifier для извлечения ингредиента
+                let clean_ingredient = IntentClassifier::extract_ingredient(message);
+
+                tracing::info!(
+                    "🔍 Searching for ingredient: \"{}\" (extracted from: \"{}\")",
+                    clean_ingredient,
+                    message
+                );
+
+                match self.backend.get_products().await {
+                    Ok(products) => {
+                        tracing::info!("✅ Loaded {} products from backend", products.len());
+
+                        let matched =
+                            GoBackendClient::filter_by_ingredient(&products, &clean_ingredient);
+
+                        if matched.is_empty() {
+                            tracing::info!(
+                                "😕 No products found with ingredient: {}",
+                                clean_ingredient
+                            );
+                            return Ok(format!(
+                                "😕 Не нашёл блюд с \"{}\". Может, попробуешь что-то другое? \
+                                 Напиши \"меню\" чтобы увидеть весь ассортимент!",
+                                clean_ingredient
+                            ));
+                        }
+
+                        tracing::info!(
+                            "🎉 Found {} products with ingredient: {}",
+                            matched.len(),
+                            clean_ingredient
+                        );
+
+                        let mut response = format!("🐟 **Блюда с \"{}\":**\n\n", clean_ingredient);
+                        for product in &matched {
+                            response.push_str(&format!(
+                                "• **{}** — {}₽\n",
+                                product.name, product.price as i32
+                            ));
+
+                            if let Some(desc) = &product.description {
+                                if !desc.is_empty() && desc.len() < 100 {
+                                    response.push_str(&format!("  _{}_\n", desc));
+                                }
+                            }
+
+                            if let Some(weight) = &product.weight {
+                                if !weight.is_empty() {
+                                    response.push_str(&format!("  📦 {}\n", weight));
+                                }
+                            }
+
+                            response.push_str("\n");
+                        }
+
+                        response.push_str("💡 Хочешь добавить что-то из этого в заказ?");
+
+                        tracing::info!("✅ Found {} matching products", matched.len());
+                        return Ok(response);
+                    }
+                    Err(e) => {
+                        tracing::error!("❌ AIEngine: Failed to search by ingredient: {}", e);
+                        return Ok(format!(
+                            "😕 Произошла ошибка при поиске блюд. Попробуй позже или напиши \"меню\" \
+                             чтобы увидеть весь ассортимент."
+                        ));
+                    }
+                }
+            }
+
+            _ => {
+                // Для остальных интентов используем стандартную логику
+            }
+        }
+
         // Извлекаем контекст в зависимости от намерения
         let context = match intent {
             Intent::OrderStatus => IntentClassifier::extract_order_id(message),
             Intent::CheckIngredients | Intent::ProductInfo => {
                 IntentClassifier::extract_product_name(message)
-            },
+            }
             Intent::Recommendation => {
                 // 🧠 Извлекаем ключевые слова из сообщения
                 let keywords = Thinker::extract_keywords(message);
-                
+
                 // 💡 Получаем сохранённые предпочтения
                 let saved_context = self.memory.get_recommendation_context(user_id).await;
-                
+
                 // 🔀 Комбинируем: ключевые слова + предпочтения
                 match (keywords.is_empty(), saved_context) {
-                    (false, Some(prefs)) => {
-                        Some(format!("{}, {}", keywords.join(", "), prefs))
-                    },
+                    (false, Some(prefs)) => Some(format!("{}, {}", keywords.join(", "), prefs)),
                     (false, None) => Some(keywords.join(", ")),
                     (true, Some(prefs)) => Some(prefs),
                     (true, None) => None,
                 }
-            },
+            }
             Intent::ProductSearch => {
                 // 🔍 Извлекаем ингредиент из запроса
                 Thinker::extract_ingredient(message)
-            },
+            }
+            Intent::SearchByIngredient => {
+                // 🐟 Извлекаем ингредиент (возвращаем всё сообщение как ингредиент)
+                Some(message.trim().to_lowercase())
+            }
             Intent::WhoAmI => {
                 // 👤 Получаем имя пользователя из памяти
                 self.memory.get_user_name(user_id).await
-            },
+            }
             _ => None,
         };
-        
+
         // Генерируем базовый ответ
         let base_response = ResponseGenerator::generate(&intent, context.as_deref());
-        
+
         // 🎨 ПЕРСОНАЛИЗАЦИЯ: Добавляем эмоциональный слой
         let personalized = Thinker::personalize(&base_response, mood, emotion);
-        
+
         // ❤️ ПРОВЕРЯЕМ ИЗМЕНЕНИЕ НАСТРОЕНИЯ
         let prev_mood = self.memory.get_last_mood(user_id).await;
         let mood_context = if let Some(prev) = prev_mood {
@@ -133,14 +352,14 @@ impl AIEngine {
         } else {
             None
         };
-        
+
         // Добавляем mood_context к ответу
         let with_mood = if let Some(mood_msg) = mood_context {
             format!("{}{}", personalized, mood_msg)
         } else {
             personalized
         };
-        
+
         // 🎯 Дополнительная персонализация для новых пользователей
         let final_response = if self.memory.get_message_count(user_id).await == 1 {
             format!(
@@ -151,21 +370,89 @@ impl AIEngine {
         } else {
             with_mood
         };
-        
+
         Ok(final_response)
+    }
+
+    /// 🎯 Process message using new plugin system
+    /// This is the new recommended way to process messages
+    pub async fn process_with_plugins(
+        &self,
+        user_id: &str,
+        message: &str,
+        state: &crate::state::AppState,
+    ) -> Result<String> {
+        // 💬 Smalltalk check first (highest priority)
+        if let Some(smalltalk_reply) = rules::smalltalk::respond(message) {
+            self.memory.add_message(user_id, message.to_string()).await;
+            return Ok(smalltalk_reply);
+        }
+
+        // 🧠 Cognitive analysis
+        let mood = Thinker::detect_mood(message);
+        let emotion = Thinker::extract_emotion(message);
+        
+        tracing::info!(target: "ai", "🧠 Cognitive: mood={}, emotion={:?}", mood, emotion);
+
+        // ❤️ Save emotional state
+        self.memory.set_emotional_state(user_id, mood, emotion).await;
+
+        // 📝 Extract and save preferences
+        self.memory.extract_and_save_preferences(user_id, message).await;
+
+        // Save message to history
+        self.memory.add_message(user_id, message.to_string()).await;
+
+        // 🎯 Classify intent
+        let intent = IntentClassifier::classify(message);
+        let intent_str = format!("{:?}", intent).to_lowercase();
+        
+        tracing::info!(target: "ai", "🎯 Classified intent: {} for message: {}", intent_str, message);
+
+        // Save intent
+        self.memory.set_last_intent(user_id, intent_str.clone()).await;
+
+        // 🚀 Create context for plugin system
+        let mut ctx = intent_handler::Context::new(
+            user_id.to_string(),
+            message.to_string(),
+            intent_str,
+        );
+
+        // 📦 Extract entities (simple for now)
+        if let Some(ingredient) = Thinker::extract_ingredient(message) {
+            ctx = ctx.with_entities(vec![ingredient]);
+        } else if let Some(product) = Thinker::extract_product(message) {
+            ctx = ctx.with_entities(vec![product]);
+        }
+
+        // 🎯 Handle through plugin registry
+        let response = self.intent_registry.handle(message, &mut ctx, state).await;
+
+        Ok(response)
+    }
+
+    /// Get registry stats (for debugging/monitoring)
+    pub fn registry_stats(&self) -> (usize, Vec<String>) {
+        (
+            self.intent_registry.count(),
+            self.intent_registry.registered_handlers(),
+        )
     }
 }
 
 impl Default for AIEngine {
     fn default() -> Self {
-        Self::new()
+        // Создаём конфиг по умолчанию для Default
+        let config = Config::default();
+        Self::new(&config)
     }
 }
 
 /// Основная функция для совместимости с текущим API
-#[allow(dead_code)]  // Устаревшая функция, оставлена для совместимости
-pub async fn generate_reply(_config: &Config, prompt: &str) -> Result<String> {
-    let engine = AIEngine::new();
+#[allow(dead_code)] // Устаревшая функция, оставлена для совместимости
+pub async fn generate_reply(config: &Config, prompt: &str) -> Result<String> {
+    let engine = AIEngine::new(config);
     // Используем фиктивный user_id для совместимости
     engine.process_message("default_user", prompt).await
 }
@@ -190,7 +477,7 @@ pub async fn analyze_data(
          📈 Для детальной аналитики используйте команду `get_stats`",
         data_description, question
     );
-    
+
     Ok(analysis)
 }
 
@@ -202,17 +489,24 @@ pub async fn get_recommendation(_config: &Config, context: &str) -> Result<Strin
     Ok(response)
 }
 
-/// Создать заказ и отправить уведомление на Go backend
+/// 🤖 Standalone order creation function
 /// 
+/// Создаёт заказ и отправляет уведомление на Go backend
+///
 /// Пример использования:
 /// ```
 /// create_order("ORD-12345", 2500.0).await?;
 /// ```
 #[allow(dead_code)]
 pub async fn create_order(order_id: &str, total: f64) -> Result<String> {
-    tracing::info!("🤖 AI: Создаю заказ {} на сумму {:.2} руб.", order_id, total);
-    
+    tracing::info!(
+        "🤖 AI: Создаю заказ {} на сумму {:.2} руб.",
+        order_id,
+        total
+    );
+
     // Отправляем заказ на Go backend
+    use crate::api::go_backend;
     match go_backend::send_order_to_backend(order_id, total).await {
         Ok(_) => {
             tracing::info!("✅ Заказ {} успешно отправлен на backend", order_id);
@@ -241,15 +535,23 @@ mod tests {
 
     #[tokio::test]
     async fn test_ai_engine_greeting() {
-        let engine = AIEngine::new();
-        let response = engine.process_message("test_user", "Привет!").await.unwrap();
+        let config = Config::default();
+        let engine = AIEngine::new(&config);
+        let response = engine
+            .process_message("test_user", "Привет!")
+            .await
+            .unwrap();
         assert!(response.contains("Привет") || response.contains("Добро пожаловать"));
     }
 
     #[tokio::test]
     async fn test_ai_engine_menu() {
-        let engine = AIEngine::new();
-        let response = engine.process_message("test_user", "покажи меню").await.unwrap();
+        let config = Config::default();
+        let engine = AIEngine::new(&config);
+        let response = engine
+            .process_message("test_user", "покажи меню")
+            .await
+            .unwrap();
         assert!(response.contains("меню") || response.contains("Меню"));
     }
 
@@ -257,7 +559,9 @@ mod tests {
     async fn test_intent_classification() {
         assert_eq!(IntentClassifier::classify("привет"), Intent::Greeting);
         assert_eq!(IntentClassifier::classify("покажи меню"), Intent::ViewMenu);
-        assert_eq!(IntentClassifier::classify("статус заказа"), Intent::OrderStatus);
+        assert_eq!(
+            IntentClassifier::classify("статус заказа"),
+            Intent::OrderStatus
+        );
     }
 }
-

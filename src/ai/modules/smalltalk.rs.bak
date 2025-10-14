@@ -1,0 +1,98 @@
+use async_trait::async_trait;
+use anyhow::Result;
+
+use crate::state::AppState;
+use super::super::intent_handler::{IntentHandler, IntentContext};
+
+/// 💬 Smalltalk Handler - casual conversations
+pub struct SmalltalkHandler;
+
+#[async_trait]
+impl IntentHandler for SmalltalkHandler {
+    fn intent_name(&self) -> &str {
+        "smalltalk"
+    }
+
+    fn priority(&self) -> u8 {
+        50 // Low priority - catch-all
+    }
+
+    async fn handle(&self, ctx: &IntentContext, _state: &AppState) -> Result<String> {
+        tracing::info!("💬 Handling smalltalk request");
+
+        let msg = ctx.message.to_lowercase();
+
+        let response = if msg.contains("привет") || msg.contains("здравствуй") {
+            "👋 Привет! Я бот FodiFood. Могу показать меню, помочь с заказом или ответить на вопросы!"
+        } else if msg.contains("как дела") || msg.contains("как ты") {
+            "😊 У меня всё отлично! Готов помочь с заказом суши. Что вас интересует?"
+        } else if msg.contains("спасибо") || msg.contains("благодарю") {
+            "🙏 Пожалуйста! Всегда рад помочь! Если нужно что-то еще — обращайтесь."
+        } else if msg.contains("пока") || msg.contains("до свидания") {
+            "👋 До встречи! Приходите еще, будем рады!"
+        } else {
+            "😊 Чем могу помочь? Могу показать меню, помочь с заказом или ответить на вопросы о блюдах."
+        };
+
+        Ok(response.to_string())
+    }
+}
+
+/// ❓ Help Handler
+pub struct HelpHandler;
+
+#[async_trait]
+impl IntentHandler for HelpHandler {
+    fn intent_name(&self) -> &str {
+        "help"
+    }
+
+    fn priority(&self) -> u8 {
+        80
+    }
+
+    async fn handle(&self, _ctx: &IntentContext, _state: &AppState) -> Result<String> {
+        tracing::info!("❓ Handling help request");
+
+        Ok(
+            "🤖 **Что я умею:**\n\n\
+            📋 Показать меню — напишите 'меню' или 'что есть'\n\
+            🔍 Найти блюдо — напишите название блюда\n\
+            🐟 Фильтр по ингредиенту — например 'блюда с лососем'\n\
+            📦 Сделать заказ — напишите 'хочу заказать'\n\
+            💰 Узнать цены — спросите о конкретном блюде\n\
+            ℹ️ Информация о доставке — напишите 'доставка'\n\n\
+            Просто напишите что вас интересует, и я помогу! 😊"
+                .to_string()
+        )
+    }
+}
+
+/// 🚚 Delivery Info Handler
+pub struct DeliveryHandler;
+
+#[async_trait]
+impl IntentHandler for DeliveryHandler {
+    fn intent_name(&self) -> &str {
+        "delivery_info"
+    }
+
+    fn priority(&self) -> u8 {
+        75
+    }
+
+    async fn handle(&self, _ctx: &IntentContext, _state: &AppState) -> Result<String> {
+        tracing::info!("🚚 Handling delivery info request");
+
+        Ok(
+            "🚚 **Информация о доставке:**\n\n\
+            💰 Минимальный заказ: 1500₽\n\
+            🎉 При заказе от 1500₽ — доставка **бесплатно**!\n\
+            ⏱️ Время доставки: 40-60 минут\n\
+            📍 Зона доставки: по всему городу\n\
+            💳 Оплата: наличными или картой\n\n\
+            Готовы сделать заказ? Напишите что хотите заказать! 😊"
+                .to_string()
+        )
+    }
+}

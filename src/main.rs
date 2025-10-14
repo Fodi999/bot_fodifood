@@ -4,6 +4,7 @@ mod config;
 mod handlers;
 mod models;
 mod state;
+mod metrics;
 
 use shuttle_axum::axum::{
     routing::{get, post},
@@ -29,14 +30,48 @@ async fn main() -> ShuttleAxum {
 
     // === Роутер ===
     let app = Router::new()
+        // 🏠 Базовые endpoints
         .route("/", get(root_handler))
         .route("/health", get(health_handler))
+        // 🌐 REST API v1
+        .route("/api/v1/health", get(api::rest::health_check))
+        .route("/api/v1/products", get(api::rest::get_products))
+        // 🔐 Authentication
+        .route("/api/v1/auth/login", post(api::rest::login_handler))
+        .route("/api/v1/auth/register", post(api::rest::register_handler))
+        // 👤 User Profile
+        .route("/api/v1/user/profile", get(api::rest::get_user_profile))
+        // 👨‍💼 Admin Endpoints
+        .route("/api/v1/admin/stats", get(api::rest::get_admin_stats))
+        .route(
+            "/api/v1/admin/orders/recent",
+            get(api::rest::get_recent_orders),
+        )
+        .route("/api/v1/admin/orders", get(api::rest::get_admin_orders))
+        .route("/api/v1/admin/users", get(api::rest::get_admin_users))
+        .route("/api/v1/admin/ws", get(api::admin_ws::admin_ws_handler))
+        // � Metrics Endpoints
+        .route("/metrics", get(api::metrics::prometheus_metrics))
+        .route("/admin/metrics", get(api::metrics::metrics_dashboard))
+        .route("/admin/metrics/intents", get(api::metrics::intent_metrics))
+        .route("/admin/metrics/stats", get(api::metrics::metrics_stats))
+        // �💬 Chat & AI
+        .route("/api/v1/chat", post(api::rest::chat_handler))
+        .route("/api/v1/search", get(api::rest::search_by_ingredient))
+        .route(
+            "/api/v1/recommendations",
+            post(api::rest::get_recommendations),
+        )
+        .route("/api/v1/intents/{text}", get(api::rest::detect_intent))
+        // 🔌 WebSocket & Webhooks (legacy)
         .route("/ws", get(handlers::ws::websocket_handler))
         .route("/notify", post(handlers::webhook::webhook_handler))
         .layer(CorsLayer::permissive())
         .with_state(state);
 
-    tracing::info!("🤖 FodiFood Bot запущен и готов!");
+    tracing::info!("🤖 FodiFood Bot API запущен и готов!");
+    tracing::info!("📡 REST API v1 доступен по адресу /api/v1/*");
+    tracing::info!("👨‍💼 Admin endpoints: /api/v1/admin/*");
 
     Ok(app.into())
 }

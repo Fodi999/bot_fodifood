@@ -1,10 +1,10 @@
-use shuttle_axum::axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
-use shuttle_axum::axum::extract::{State, Query};
-use shuttle_axum::axum::response::IntoResponse;
 use futures::{sink::SinkExt, stream::StreamExt};
+use serde::Deserialize;
+use shuttle_axum::axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
+use shuttle_axum::axum::extract::{Query, State};
+use shuttle_axum::axum::response::IntoResponse;
 use tokio::sync::mpsc;
 use uuid::Uuid;
-use serde::Deserialize;
 
 use crate::{
     models::{
@@ -27,7 +27,7 @@ pub async fn websocket_handler(
     State(state): State<AppState>,
 ) -> impl IntoResponse {
     tracing::info!("🌐 WebSocket connection attempt with params: {:?}", params);
-    
+
     // Логируем префикс токена (если есть) для отладки
     if let Some(ref token) = params.token {
         let prefix_len = token.len().min(20);
@@ -35,7 +35,7 @@ pub async fn websocket_handler(
     } else {
         tracing::info!("📝 No token in query params, expecting auth message");
     }
-    
+
     ws.on_upgrade(move |socket| handle_socket(socket, state, params))
 }
 
@@ -53,7 +53,7 @@ async fn handle_socket(socket: WebSocket, state: AppState, params: WsParams) {
     // Попытка автоматической аутентификации через query параметр
     if let Some(token) = params.token {
         tracing::info!("🔐 Attempting auto-authentication with query token...");
-        
+
         match state.backend.verify_token(&token).await {
             Ok(response) if response.valid => {
                 authenticated = true;
@@ -89,8 +89,8 @@ async fn handle_socket(socket: WebSocket, state: AppState, params: WsParams) {
                 }
 
                 tracing::info!(
-                    "✅ Auto-authenticated user {} as {:?} (name: {:?}, email: {:?})", 
-                    user_id, 
+                    "✅ Auto-authenticated user {} as {:?} (name: {:?}, email: {:?})",
+                    user_id,
                     user_role,
                     response.name,
                     response.email
@@ -127,7 +127,7 @@ async fn handle_socket(socket: WebSocket, state: AppState, params: WsParams) {
         match msg {
             Message::Text(text) => {
                 tracing::info!("💬 Incoming raw text: {}", text);
-                
+
                 // Parse incoming message
                 let incoming: Result<IncomingMessage, _> = serde_json::from_str(&text);
 
@@ -169,8 +169,8 @@ async fn handle_socket(socket: WebSocket, state: AppState, params: WsParams) {
                                 }
 
                                 tracing::info!(
-                                    "User {} authenticated as {:?} (name: {:?}, email: {:?})", 
-                                    user_id, 
+                                    "User {} authenticated as {:?} (name: {:?}, email: {:?})",
+                                    user_id,
                                     user_role,
                                     response.name,
                                     response.email
@@ -190,7 +190,7 @@ async fn handle_socket(socket: WebSocket, state: AppState, params: WsParams) {
                         handle_chat_message(&state, &user_id, &user_role, &text, &tx).await;
                         tracing::info!("🟢 Finished processing authenticated message");
                     }
-                    
+
                     // ДЕМО-РЕЖИМ: Разрешаем чат без аутентификации для тестирования AI
                     Ok(IncomingMessage::Chat { text }) if !authenticated => {
                         tracing::info!("📩 Демо-режим: обработка сообщения без аутентификации");
@@ -210,7 +210,11 @@ async fn handle_socket(socket: WebSocket, state: AppState, params: WsParams) {
                     }
 
                     Err(e) => {
-                        tracing::error!("❌ Failed to parse incoming message: {} (raw: '{}')", e, text);
+                        tracing::error!(
+                            "❌ Failed to parse incoming message: {} (raw: '{}')",
+                            e,
+                            text
+                        );
                         let response = OutgoingMessage::Error {
                             message: format!("Invalid message format: {}", e),
                         };
@@ -253,30 +257,134 @@ async fn handle_chat_message(
     tx: &mpsc::UnboundedSender<String>,
 ) {
     tracing::info!("🧠 handle_chat_message triggered with text: {}", text);
-    
+
     // 🤖 Используем новый AI Engine для обработки сообщения
     match state.ai.process_message(user_id, text).await {
         Ok(mut ai_response) => {
-            // 🍽️ Если это запрос меню - подтягиваем реальные данные с бэкенда
-            use crate::ai::{IntentClassifier, Intent};
+            // 🔍 Классифицируем намерение для подтягивания реальных данных
+            use crate::ai::{Intent, IntentClassifier, Thinker};
             let intent = IntentClassifier::classify(text);
-            
-            if matches!(intent, Intent::ViewMenu) {
-                tracing::info!("🍽️ ViewMenu detected - fetching real menu from backend");
-                
-                match state.backend.get_products().await {
-                    Ok(products) => {
-                        use crate::api::go_backend::GoBackendClient;
-                        ai_response = GoBackendClient::format_products_list(&products);
-                        tracing::info!("✅ Loaded {} products from backend", products.len());
-                    }
-                    Err(e) => {
-                        tracing::error!("❌ Failed to load menu from backend: {}", e);
-                        ai_response.push_str("\n\n⚠️ Не удалось загрузить актуальное меню с сервера, показываю базовую информацию.");
+
+            match intent {
+                // 🍽️ Меню - подтягиваем все продукты
+                Intent::ViewMenu => {
+                    tracing::info!("🍽️ ViewMenu detected - fetching real menu from backend");
+
+                    match state.backend.get_products().await {
+                        Ok(products) => {
+                            use crate::api::go_backend::GoBackendClient;
+                            ai_response = GoBackendClient::format_products_list(&products);
+                            tracing::info!("✅ Loaded {} products from backend", products.len());
+                        }
+                        Err(e) => {
+                            tracing::error!("❌ Failed to load menu from backend: {}", e);
+                            ai_response.push_str("\n\n⚠️ Не удалось загрузить актуальное меню с сервера, показываю базовую информацию.");
+                        }
                     }
                 }
+
+                // 🔍 Поиск по ингредиенту - фильтруем продукты
+                Intent::ProductSearch => {
+                    if let Some(ingredient) = Thinker::extract_ingredient(text) {
+                        tracing::info!("🔍 ProductSearch detected - searching for: {}", ingredient);
+
+                        match state.backend.get_products().await {
+                            Ok(products) => {
+                                use crate::api::go_backend::{GoBackendClient, Product};
+                                let filtered =
+                                    GoBackendClient::filter_by_ingredient(&products, &ingredient);
+
+                                if !filtered.is_empty() {
+                                    // Конвертируем Vec<&Product> в Vec<Product>
+                                    let filtered_products: Vec<Product> =
+                                        filtered.iter().map(|&p| p.clone()).collect();
+
+                                    ai_response = format!(
+                                        "🔍 **Нашёл {} блюд с \"{}\":**\n\n{}",
+                                        filtered_products.len(),
+                                        ingredient,
+                                        GoBackendClient::format_products_list(&filtered_products)
+                                    );
+                                    tracing::info!(
+                                        "✅ Found {} products with {}",
+                                        filtered_products.len(),
+                                        ingredient
+                                    );
+                                } else {
+                                    ai_response = format!(
+                                        "🤔 Не нашёл блюд с \"{}\", но вот полное меню:\n\n{}",
+                                        ingredient,
+                                        GoBackendClient::format_products_list(&products)
+                                    );
+                                }
+                            }
+                            Err(e) => {
+                                tracing::error!("❌ Failed to search products: {}", e);
+                                // Оставляем статичный ответ из AI
+                            }
+                        }
+                    }
+                }
+
+                // ℹ️ Информация о блюде - ищем конкретный продукт
+                Intent::ProductInfo => {
+                    if let Some(product_name) = Thinker::extract_product(text) {
+                        tracing::info!("ℹ️ ProductInfo detected - looking for: {}", product_name);
+
+                        match state.backend.get_products().await {
+                            Ok(products) => {
+                                use crate::api::go_backend::GoBackendClient;
+                                if let Some(product) =
+                                    GoBackendClient::find_product_by_name(&products, &product_name)
+                                {
+                                    ai_response = format!(
+                                        "ℹ️ **{}**\n\n\
+                                         💰 **Цена:** {}₽\n\
+                                         📦 **Вес/Объём:** {}\n\
+                                         📋 **Описание:** {}\n\
+                                         🏷️ **Категория:** {}\n\n\
+                                         💡 Хочешь заказать? Просто скажи \"беру\" или \"закажу {}\"!",
+                                        product.name,
+                                        product.price as i32,
+                                        product.weight.as_deref().unwrap_or("—"),
+                                        product.description.as_deref().unwrap_or("Вкуснейшее блюдо из свежих ингредиентов"),
+                                        product.category.as_deref().unwrap_or("Другое"),
+                                        product.name
+                                    );
+                                    tracing::info!("✅ Found product: {}", product.name);
+                                }
+                            }
+                            Err(e) => {
+                                tracing::error!("❌ Failed to get product info: {}", e);
+                            }
+                        }
+                    }
+                }
+
+                // 💰 Цены - показываем все цены из реального меню
+                Intent::PriceInquiry => {
+                    tracing::info!("💰 PriceInquiry detected - fetching prices");
+
+                    match state.backend.get_products().await {
+                        Ok(products) => {
+                            use crate::api::go_backend::GoBackendClient;
+                            ai_response = format!(
+                                "💰 **Актуальные цены:**\n\n{}",
+                                GoBackendClient::format_products_list(&products)
+                            );
+                            tracing::info!("✅ Loaded prices for {} products", products.len());
+                        }
+                        Err(e) => {
+                            tracing::error!("❌ Failed to load prices: {}", e);
+                        }
+                    }
+                }
+
+                _ => {
+                    // Для остальных интентов используем стандартный AI-ответ
+                }
             }
-            
+
             tracing::info!("🤖 AI response: {}", ai_response);
             let response = OutgoingMessage::ChatResponse {
                 text: ai_response,
@@ -343,16 +451,22 @@ async fn handle_command(
                 // Создаём заказ через Go backend
                 match state.backend.create_order(params.clone()).await {
                     Ok(order) => {
-                        tracing::info!("✅ Заказ #{} создан успешно на сумму {:.2}₽", order.id, order.total);
-                        
+                        tracing::info!(
+                            "✅ Заказ #{} создан успешно на сумму {:.2}₽",
+                            order.id,
+                            order.total
+                        );
+
                         // Отправляем уведомление через нашу функцию
                         if let Err(e) = crate::api::go_backend::send_order_to_backend(
-                            &order.id.to_string(), 
-                            order.total
-                        ).await {
+                            &order.id.to_string(),
+                            order.total,
+                        )
+                        .await
+                        {
                             tracing::warn!("⚠️ Не удалось отправить уведомление: {}", e);
                         }
-                        
+
                         let response = OutgoingMessage::CommandResponse {
                             action: action.to_string(),
                             data: serde_json::to_value(order).unwrap_or_default(),

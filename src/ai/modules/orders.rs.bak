@@ -1,0 +1,122 @@
+use async_trait::async_trait;
+use anyhow::Result;
+
+use crate::state::AppState;
+use super::super::intent_handler::{IntentHandler, IntentContext};
+
+/// 📦 Create Order Handler
+pub struct CreateOrderHandler;
+
+#[async_trait]
+impl IntentHandler for CreateOrderHandler {
+    fn intent_name(&self) -> &str {
+        "create_order"
+    }
+
+    fn priority(&self) -> u8 {
+        100 // High priority
+    }
+
+    async fn handle(&self, ctx: &IntentContext, _state: &AppState) -> Result<String> {
+        tracing::info!("📦 Handling create order request");
+
+        // Extract order details from entities
+        let items_text = ctx.entities.join(", ");
+
+        if items_text.is_empty() {
+            return Ok(
+                "📦 Чтобы сделать заказ, напишите что хотите заказать.\n\
+                Например: 'Хочу заказать Филадельфию и Калифорнию'".to_string()
+            );
+        }
+
+        Ok(format!(
+            "📦 **Ваш заказ:**\n\n{}\n\n\
+            Для подтверждения укажите:\n\
+            📍 Адрес доставки\n\
+            📱 Номер телефона\n\
+            💬 Комментарий (по желанию)\n\n\
+            Напишите все данные одним сообщением.",
+            items_text
+        ))
+    }
+}
+
+/// � Order Status Intent Handler
+pub struct OrderStatusHandler;
+
+impl OrderStatusHandler {
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+#[async_trait]
+impl IntentHandler for OrderStatusHandler {
+    fn name(&self) -> &'static str {
+        "order_status"
+    }
+
+    fn priority(&self) -> u8 {
+        95
+    }
+
+    async fn handle(&self, _input: &str, ctx: &mut Context, state: &AppState) -> Option<String> {
+        tracing::info!(target: "ai", "� Handling order status request for user: {}", ctx.user_id);
+
+        match state.backend.orders.get_recent_orders(&ctx.user_id, 1).await {
+            Ok(orders) => {
+                if orders.is_empty() {
+                    Some("У вас пока нет активных заказов 📭".to_string())
+                } else {
+                    let order = &orders[0];
+                    let order_id = order.get("id")
+                        .and_then(|v| v.as_str())
+                        .or_else(|| order.get("order_id").and_then(|v| v.as_str()))
+                        .unwrap_or("неизвестен");
+                    let status = order.get("status")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("неизвестен");
+
+                    Some(format!(
+                        "� Ваш последний заказ:\n\
+                        🆔 Номер: {}\n\
+                        � Статус: {}\n\n\
+                        Скоро свяжемся с вами!",
+                        order_id, status
+                    ))
+                }
+            }
+            Err(e) => {
+                tracing::error!(target: "ai", "❌ Failed to get order status: {}", e);
+                Some("Извините, не могу получить статус заказа. Попробуйте позже �".to_string())
+            }
+        }
+    }
+}
+
+/// ❌ Cancel Order Handler
+pub struct CancelOrderHandler;
+
+#[async_trait]
+impl IntentHandler for CancelOrderHandler {
+    fn intent_name(&self) -> &str {
+        "cancel_order"
+    }
+
+    fn priority(&self) -> u8 {
+        85
+    }
+
+    async fn handle(&self, _ctx: &IntentContext, _state: &AppState) -> Result<String> {
+        tracing::info!("❌ Handling cancel order request");
+
+        Ok(
+            "❌ Для отмены заказа свяжитесь с нами:\n\n\
+            📱 Телефон: +7 (XXX) XXX-XX-XX\n\
+            💬 Или напишите менеджеру в чате\n\n\
+            Мы постараемся помочь!"
+                .to_string()
+        )
+    }
+}

@@ -2,20 +2,22 @@ use dashmap::DashMap;
 use std::sync::Arc;
 use tokio::sync::mpsc;
 
+use crate::ai::AIEngine;
+use crate::api::go_backend::GoBackendClient;
 use crate::config::Config;
 use crate::models::user::UserRole;
-use crate::api::go_backend::GoBackendClient;
-use crate::ai::AIEngine;  // 🧠 Добавляем AI движок
+use crate::metrics::MetricsCollector; // 📊 Metrics
 
 pub type ClientId = String;
 
 #[derive(Clone)]
 pub struct AppState {
-    #[allow(dead_code)]  // Может использоваться в будущих фичах
+    #[allow(dead_code)] // Может использоваться в будущих фичах
     pub config: Config,
     pub connections: Arc<DashMap<ClientId, ClientConnection>>,
     pub backend: Arc<GoBackendClient>,
-    pub ai: Arc<AIEngine>,  // 🧠 AI движок
+    pub ai: Arc<AIEngine>, // 🧠 AI движок
+    pub metrics: Arc<MetricsCollector>, // 📊 Metrics collector
 }
 
 pub struct ClientConnection {
@@ -28,13 +30,15 @@ pub struct ClientConnection {
 impl AppState {
     pub fn new(config: Config) -> Self {
         let backend = Arc::new(GoBackendClient::new(&config));
-        let ai = Arc::new(AIEngine::new());  // 🧠 Создаём AI
-        
+        let ai = Arc::new(AIEngine::new(&config)); // 🧠 Создаём AI с config
+        let metrics = Arc::new(MetricsCollector::new()); // 📊 Создаём metrics
+
         Self {
             config,
             connections: Arc::new(DashMap::new()),
             backend,
-            ai,  // 🧠 Добавляем AI
+            ai, // 🧠 Добавляем AI
+            metrics, // 📊 Добавляем metrics
         }
     }
 

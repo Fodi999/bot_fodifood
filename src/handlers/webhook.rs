@@ -1,8 +1,8 @@
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use shuttle_axum::axum::extract::State;
 use shuttle_axum::axum::http::StatusCode;
 use shuttle_axum::axum::Json;
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
 use crate::{models::message::OutgoingMessage, state::AppState};
 
