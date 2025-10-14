@@ -746,3 +746,46 @@ pub async fn get_products(
 
     Ok(Json(product_list))
 }
+
+/// POST /api/v1/admin/command - Admin AI Assistant endpoint
+/// Natural language admin commands
+#[derive(Debug, Deserialize)]
+pub struct AdminCommandRequest {
+    pub command: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct AdminCommandResponse {
+    pub response: String,
+    pub intent: String,
+}
+
+pub async fn admin_command_handler(
+    State(state): State<AppState>,
+    Json(req): Json<AdminCommandRequest>,
+) -> Result<Json<AdminCommandResponse>, (StatusCode, String)> {
+    use crate::ai::AdminAssistant;
+    use tokio::sync::RwLock;
+    use std::sync::Arc;
+
+    tracing::info!("🔧 Admin command: {}", req.command);
+
+    // Create admin assistant with metrics and orchestrator
+    let metrics_lock = Arc::new(RwLock::new((*state.metrics).clone()));
+    let assistant = AdminAssistant::new(
+        state.backend_orchestrator.clone(),
+        metrics_lock,
+    );
+
+    // Detect intent
+    let intent = assistant.detect_admin_intent(&req.command);
+    tracing::info!("🎯 Admin intent detected: {:?}", intent);
+
+    // Process command
+    let response = assistant.process_admin_command(intent.clone()).await;
+
+    Ok(Json(AdminCommandResponse {
+        response,
+        intent: format!("{:?}", intent),
+    }))
+}

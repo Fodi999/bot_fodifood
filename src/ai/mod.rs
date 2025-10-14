@@ -1,3 +1,4 @@
+pub mod admin_assistant; // 🔧 Admin AI assistant
 pub mod intent_handler; // 🎯 Intent handler system
 mod intents;
 mod memory;
@@ -10,6 +11,7 @@ use crate::api::go_backend::GoBackendClient;
 use crate::config::Config;
 use anyhow::Result;
 
+pub use admin_assistant::AdminAssistant;
 pub use intent_handler::{IntentHandler, IntentRegistry};
 pub use intents::{Intent, IntentClassifier};
 pub use memory::BotMemory;

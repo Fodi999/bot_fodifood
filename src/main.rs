@@ -51,6 +51,7 @@ async fn main() -> ShuttleAxum {
         .route("/api/v1/admin/orders", get(api::rest::get_admin_orders))
         .route("/api/v1/admin/users", get(api::rest::get_admin_users))
         .route("/api/v1/admin/ws", get(api::admin_ws::admin_ws_handler))
+        .route("/api/v1/admin/command", post(api::rest::admin_command_handler)) // 🤖 Admin AI
         // 🎯 Backend Control Endpoints
         .route("/api/v1/admin/backend/start", post(api::backend_control::start_backend))
         .route("/api/v1/admin/backend/stop", post(api::backend_control::stop_backend))

@@ -2,6 +2,20 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use dashmap::DashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::collections::HashMap;
+
+/// Statistics snapshot from metrics collector
+#[derive(Debug, Clone)]
+pub struct MetricsStats {
+    pub total_intents: u64,
+    pub failed_intents: u64,
+    pub active_connections: u64,
+    pub total_connections: u64,
+    pub avg_response_time: f64,
+    pub min_response_time: f64,
+    pub max_response_time: f64,
+    pub intents_by_type: HashMap<String, u64>,
+}
 
 /// 📊 Metrics Collector for AI Intent Handlers
 ///
@@ -29,6 +43,12 @@ pub struct MetricsCollector {
     
     /// Application start time
     start_time: Instant,
+    
+    /// Active WebSocket connections
+    active_connections: Arc<AtomicU64>,
+    
+    /// Total connections (lifetime)
+    total_connections: Arc<AtomicU64>,
 }
 
 impl MetricsCollector {
@@ -41,6 +61,8 @@ impl MetricsCollector {
             success_counts: Arc::new(DashMap::new()),
             total_requests: Arc::new(AtomicU64::new(0)),
             start_time: Instant::now(),
+            active_connections: Arc::new(AtomicU64::new(0)),
+            total_connections: Arc::new(AtomicU64::new(0)),
         }
     }
 
@@ -140,6 +162,61 @@ impl MetricsCollector {
             .iter()
             .map(|entry| entry.key().clone())
             .collect()
+    }
+
+    /// Increment active connections
+    pub fn increment_connections(&self) {
+        self.active_connections.fetch_add(1, Ordering::Relaxed);
+        self.total_connections.fetch_add(1, Ordering::Relaxed);
+    }
+
+    /// Decrement active connections
+    pub fn decrement_connections(&self) {
+        self.active_connections.fetch_sub(1, Ordering::Relaxed);
+    }
+
+    /// Get metrics statistics snapshot
+    pub fn get_stats(&self) -> MetricsStats {
+        let mut intents_by_type = HashMap::new();
+        let mut all_response_times = Vec::new();
+        let mut total_errors = 0u64;
+
+        for entry in self.intent_counts.iter() {
+            let intent = entry.key().clone();
+            let count = entry.value().load(Ordering::Relaxed);
+            intents_by_type.insert(intent.clone(), count);
+
+            // Collect response times
+            if let Some(times) = self.response_times.get(&intent) {
+                all_response_times.extend(times.iter().copied());
+            }
+
+            // Sum up errors
+            if let Some(errors) = self.error_counts.get(&intent) {
+                total_errors += errors.load(Ordering::Relaxed);
+            }
+        }
+
+        let (avg_time, min_time, max_time) = if all_response_times.is_empty() {
+            (0.0, 0.0, 0.0)
+        } else {
+            let sum: Duration = all_response_times.iter().sum();
+            let avg = sum.as_secs_f64() / all_response_times.len() as f64;
+            let min = all_response_times.iter().min().map(|d| d.as_secs_f64()).unwrap_or(0.0);
+            let max = all_response_times.iter().max().map(|d| d.as_secs_f64()).unwrap_or(0.0);
+            (avg, min, max)
+        };
+
+        MetricsStats {
+            total_intents: self.total_requests.load(Ordering::Relaxed),
+            failed_intents: total_errors,
+            active_connections: self.active_connections.load(Ordering::Relaxed),
+            total_connections: self.total_connections.load(Ordering::Relaxed),
+            avg_response_time: avg_time,
+            min_response_time: min_time,
+            max_response_time: max_time,
+            intents_by_type,
+        }
     }
 
     /// Generate Prometheus metrics format
