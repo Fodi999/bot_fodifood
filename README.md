@@ -1,18 +1,55 @@
 # FodiFood Intelligent Bot 🦐🤖
 
-Интеллектуальный бот на Rust для ресторана FodiFood - центральный коммуникационный узел между клиентами, администраторами и бизнес-логикой.
+**v2.2** - Advanced AI Restaurant Bot with Backend Orchestration
+
+Интеллектуальный бот на Rust для ресторана FodiFood - центральный коммуникационный узел между клиентами, администраторами и бизнес-логикой с расширенными возможностями мониторинга и управления.
+
+## 🚀 Что нового в v2.2
+
+### ✅ Завершено (80% готовности):
+
+**Step 1: Rules Migration** ✅
+- Миграция на модульную архитектуру intent handlers
+- 14 специализированных обработчиков намерений
+- Улучшенная система распознавания интентов
+
+**Step 2: Metrics Dashboard** ✅
+- Prometheus-совместимые метрики
+- Веб-дашборд для мониторинга
+- Отслеживание intent'ов и времени ответа
+- JSON/Prometheus форматы экспорта
+
+**Step 3: WebSocket Insight Layer** ✅
+- Real-time стриминг AI событий обработки
+- 9 типов событий (классификация, entity extraction, и т.д.)
+- WebSocket endpoint `/api/v1/insight` для фронтенда
+- Broadcast система для множественных клиентов
+
+**Step 4: Go Backend Orchestration** ✅
+- Управление жизненным циклом Go процесса
+- Health monitoring с автоматическим перезапуском
+- REST API для управления backend'ом
+- Status tracking и uptime мониторинг
+
+**Step 5: Admin AI Assistant** 🔲 (В разработке)
+- AI-ассистент для администраторов
+- Команды управления через чат
 
 ## 🏗️ Архитектура
 
 ```
-┌─────────────────┐         WebSocket          ┌──────────────────┐
-│   Next.js       │◄────────────────────────────►│   Rust Bot       │
-│   Frontend      │      (wss://)               │  (Shuttle.rs)    │
-│   (Vercel)      │                              │                  │
-└─────────────────┘                              └────────┬─────────┘
+┌─────────────────┐    WebSocket + REST      ┌──────────────────────┐
+│   Next.js       │◄─────────────────────────►│   Rust Bot v2.2      │
+│   Frontend      │     wss:// + https://     │   (Shuttle.rs)       │
+│   (Vercel)      │                            │                      │
+└─────────────────┘                            │  🧠 AI Engine        │
+                                               │  📊 Metrics          │
+                                               │  📡 Insight WS       │
+                                               │  🎯 Orchestrator     │
+                                               └──────────┬───────────┘
                                                           │
                                                           │ REST API
-                                                          │
+                                                          │ Health Checks
                                                           ▼
                                                  ┌──────────────────┐
                                                  │   Go Backend     │
@@ -23,6 +60,33 @@
 
 ## ✨ Возможности
 
+### 🤖 AI Engine (v2.2)
+- **14 Intent Handlers**: Модульная архитектура обработчиков
+- **Cognitive Analysis**: Определение настроения, эмоций, сложности
+- **Natural Language**: Понимание русского языка с контекстом
+- **Smart Routing**: Автоматическая маршрутизация запросов
+- **Memory System**: Персонализация на основе истории
+
+### 📊 Metrics & Monitoring
+- **Prometheus Metrics**: `/metrics` endpoint
+- **Web Dashboard**: `/admin/metrics` - визуальный дашборд
+- **Intent Tracking**: Статистика использования intent'ов
+- **Response Times**: Мониторинг производительности
+- **Success Rates**: Отслеживание успешности обработки
+
+### 📡 Real-time Insights
+- **WebSocket Stream**: `/api/v1/insight` - события обработки AI
+- **Event Types**: 9 типов событий (classification, extraction, routing, etc.)
+- **Client Management**: Broadcast для множественных клиентов
+- **Debugging**: Визуализация AI pipeline в реальном времени
+
+### 🎯 Backend Orchestration
+- **Process Control**: Start/Stop/Restart Go backend
+- **Health Monitoring**: Автоматические health checks
+- **Auto-restart**: Восстановление при сбоях
+- **Status API**: `/api/v1/admin/backend/status`
+- **PID Tracking**: Мониторинг процесса и uptime
+
 ### 🔐 Аутентификация
 - JWT-токены от Go backend
 - Роли: Client, Admin, Manager, Courier, Cook
@@ -32,12 +96,7 @@
 - Реал-тайм чат с клиентами
 - Командный интерфейс для управления
 - Автоматические уведомления админам
-
-### 🤖 AI интеграция (OpenAI GPT-4o-mini)
-- Естественное общение с клиентами
-- Анализ данных для менеджеров
-- Персонализированные рекомендации
-- Бизнес-аналитика и советы
+- AI Insight streaming
 
 ### 📡 Webhook система
 - Получение событий от Go backend
@@ -98,7 +157,213 @@ cargo shuttle deploy
 wss://fodifood-bot.shuttleapp.rs/ws
 ```
 
-## 📝 API Endpoints
+## 📝 Примеры использования
+
+### Интеллектуальный диалог с AI
+
+```bash
+# WebSocket чат (с AI insights)
+wscat -c wss://your-app.shuttleapp.rs/ws
+> {"type":"message","content":"Покажи меню на сегодня","user_id":"user123"}
+
+# AI отправляет событие "intent_detected" через /api/v1/insight
+# Затем приходит ответ с рекомендациями
+
+# REST API
+curl -X POST https://your-app.shuttleapp.rs/api/v1/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Хочу заказать пиццу Маргарита",
+    "user_id": "user123"
+  }'
+```
+
+### Мониторинг AI системы (v2.2)
+
+```bash
+# Prometheus метрики
+curl http://localhost:8000/api/v1/metrics/prometheus
+
+# Метрики по интентам
+curl http://localhost:8000/api/v1/metrics/intents
+{
+  "total_intents": 1523,
+  "by_type": {
+    "menu_query": 456,
+    "order_create": 234,
+    "recommendation_request": 189
+  }
+}
+
+# AI Insights WebSocket (real-time events)
+wscat -c ws://localhost:8000/api/v1/insight
+# Получаете события: intent_detected, rule_matched, response_generated
+```
+
+### Управление Backend (v2.2)
+
+```bash
+# Запуск Go backend
+curl -X POST http://localhost:8000/api/v1/admin/backend/start
+
+# Статус системы
+curl http://localhost:8000/api/v1/admin/backend/status
+{
+  "status": "running",
+  "pid": 12345,
+  "uptime_secs": 3600,
+  "restart_count": 0
+}
+
+# Перезапуск при необходимости
+curl -X POST http://localhost:8000/api/v1/admin/backend/restart
+```
+
+### Примеры AI Intent Handling
+
+```python
+# Меню запрос
+User: "Что у вас есть из десертов?"
+AI: [intent: menu_query, category: desserts]
+Response: "🍰 У нас есть тирамису, чизкейк, панна-котта..."
+
+# Создание заказа
+User: "Закажи мне капучино и круассан"
+AI: [intent: order_create, items: ["капучино", "круассан"]]
+Response: "✅ Заказ создан: Капучино + Круассан (350₽)"
+
+# Рекомендации
+User: "Что посоветуешь к стейку?"
+AI: [intent: recommendation_request, context: "стейк"]
+Response: "🍷 К стейку отлично подойдет красное вино Cabernet..."
+
+# Аналитика
+User: "Покажи статистику заказов за неделю"
+AI: [intent: analytics_query, period: "week"]
+Response: "📊 За последнюю неделю: 234 заказа, средний чек 850₽..."
+```
+
+### 📊 Metrics Endpoints (v2.2)
+
+#### GET `/metrics`
+Prometheus-совместимые метрики
+
+```bash
+curl https://fodifood-bot.shuttleapp.rs/metrics
+```
+
+#### GET `/admin/metrics`
+Веб-дашборд для мониторинга (HTML)
+
+#### GET `/admin/metrics/intents`
+Статистика по intent'ам (JSON)
+
+```json
+{
+  "menu": {"count": 150, "avg_time_ms": 45},
+  "order": {"count": 89, "avg_time_ms": 120}
+}
+```
+
+#### GET `/admin/metrics/stats`
+Общая статистика системы
+
+```json
+{
+  "total_requests": 1024,
+  "avg_response_time_ms": 78,
+  "success_rate": 0.97
+}
+```
+
+### 📡 AI Insights WebSocket (v2.2)
+
+#### WebSocket: `/api/v1/insight`
+Real-time стриминг AI событий обработки
+
+```javascript
+const ws = new WebSocket('wss://fodifood-bot.shuttleapp.rs/api/v1/insight?client_id=admin_123');
+
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  console.log('AI Event:', data);
+  // {type: "intent_classified", intent: "menu", confidence: 0.95, ...}
+};
+```
+
+**Типы событий:**
+- `intent_classification_started` - Начало классификации
+- `intent_classified` - Intent определен (с confidence)
+- `entity_extraction` - Извлечены сущности
+- `handler_routing` - Маршрутизация к handler'у
+- `handler_execution_started` - Начало выполнения
+- `handler_execution_completed` - Выполнение завершено
+- `context_updated` - Обновлен контекст
+- `processing_completed` - Обработка завершена
+- `processing_error` - Ошибка обработки
+
+### 🎯 Backend Control Endpoints (v2.2)
+
+#### POST `/api/v1/admin/backend/start`
+Запустить Go backend процесс
+
+```bash
+curl -X POST https://fodifood-bot.shuttleapp.rs/api/v1/admin/backend/start
+```
+
+#### POST `/api/v1/admin/backend/stop`
+Остановить Go backend процесс
+
+#### POST `/api/v1/admin/backend/restart`
+Перезапустить Go backend
+
+#### GET `/api/v1/admin/backend/status`
+Получить статус backend процесса
+
+```json
+{
+  "status": "running",
+  "pid": 12345,
+  "uptime_secs": 3600,
+  "restart_count": 0,
+  "last_health_check": "healthy",
+  "is_running": true
+}
+```
+
+#### GET `/api/v1/admin/backend/health`
+Health check оркестратора
+
+```json
+{
+  "status": "ok",
+  "service": "backend_orchestrator",
+  "enabled": true
+}
+```
+
+### Admin & Auth Endpoints
+
+#### GET `/health`
+Service health check
+
+#### POST `/api/v1/auth/login`
+Авторизация пользователя
+
+#### GET `/api/v1/products`
+Получить список продуктов
+
+#### GET `/api/v1/admin/stats`
+Административная статистика
+
+#### GET `/api/v1/admin/orders`
+Список всех заказов (admin only)
+
+#### GET `/api/v1/admin/users`
+Список пользователей (admin only)
+
+#### WebSocket: `/api/v1/admin/ws`
+Admin WebSocket для управления
 
 ### WebSocket: `/ws`
 
@@ -193,26 +458,290 @@ Webhook для событий от Go backend:
 → AI анализирует статистику и дает рекомендации
 ```
 
-## 🏗️ Структура проекта
+## 🏗️ Структура проекта v2.2
 
 ```
 src/
-├── main.rs               # Точка входа, Shuttle setup
-├── config.rs             # Конфигурация из env
-├── state.rs              # Глобальное состояние приложения
-├── handlers/
-│   ├── ws.rs             # WebSocket обработчик
-│   └── webhook.rs        # Webhook endpoints
-├── api/
-│   └── go_backend.rs     # REST клиент для Go API
-├── ai/
-│   └── mod.rs            # OpenAI интеграция
-└── models/
-    ├── message.rs        # Типы сообщений
-    └── user.rs           # User, роли, JWT
+├── main.rs                  # Точка входа Shuttle
+├── lib.rs                   # Library root
+├── config.rs                # Конфигурация
+├── state.rs                 # AppState с orchestrator
+│
+├── ai/                      # 🧠 AI Engine v2.2
+│   ├── mod.rs               # AIEngine с process_with_insights()
+│   ├── intents.rs           # Intent классификация
+│   ├── intent_handler.rs    # Plugin system для handlers
+│   ├── thinker.rs           # Cognitive analysis
+│   ├── memory.rs            # In-memory context
+│   ├── persistent_memory.rs # Persistent storage (sled)
+│   ├── modules/             # 📦 Intent Handlers
+│   │   ├── menu.rs
+│   │   ├── orders.rs
+│   │   ├── recommendations.rs
+│   │   ├── analytics.rs
+│   │   ├── smalltalk.rs
+│   │   └── news.rs
+│   └── rules/               # Rule-based responses
+│       ├── menu.rs
+│       ├── orders.rs
+│       ├── recommendations.rs
+│       ├── analytics.rs
+│       └── smalltalk.rs
+│
+├── api/                     # 🌐 API Layer
+│   ├── rest.rs              # REST endpoints
+│   ├── metrics.rs           # 📊 Metrics endpoints
+│   ├── admin_ws.rs          # Admin WebSocket
+│   ├── insight_ws.rs        # 📡 AI Insight WebSocket
+│   ├── backend_control.rs   # 🎯 Backend control API
+│   └── go_backend/          # Go backend integration
+│       ├── mod.rs
+│       ├── auth.rs
+│       ├── products.rs
+│       ├── orders.rs
+│       ├── admin.rs
+│       └── types.rs
+│
+├── handlers/                # 🔌 Protocol Handlers
+│   ├── ws.rs                # WebSocket handler
+│   ├── webhook.rs           # Webhook handler
+│   ├── insight_events.rs    # 📡 AI event types
+│   └── insight_broadcaster.rs # WebSocket broadcaster
+│
+├── orchestration/           # 🎯 Backend Orchestration (v2.2)
+│   ├── mod.rs
+│   ├── backend.rs           # Process lifecycle management
+│   └── health.rs            # Health checker
+│
+├── metrics/                 # 📊 Metrics System (v2.2)
+│   └── mod.rs               # MetricsCollector
+│
+├── models/                  # 📋 Data Models
+│   ├── message.rs
+│   └── user.rs
+│
+└── bin/                     # 🔧 Binaries
+    ├── chat.rs              # CLI chat client
+    └── local.rs             # Local dev server
 ```
 
-## 🔧 Настройка Go Backend
+## � Примеры использования
+
+### Интеллектуальный диалог с AI
+
+```bash
+# WebSocket чат (с AI insights)
+wscat -c wss://your-app.shuttleapp.rs/ws
+> {"type":"message","content":"Покажи меню на сегодня","user_id":"user123"}
+
+# AI отправляет событие "intent_detected" через /api/v1/insight
+# Затем приходит ответ с рекомендациями
+
+# REST API
+curl -X POST https://your-app.shuttleapp.rs/api/v1/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Хочу заказать пиццу Маргарита",
+    "user_id": "user123"
+  }'
+```
+
+### Мониторинг AI системы (v2.2)
+
+```bash
+# Prometheus метрики
+curl http://localhost:8000/api/v1/metrics/prometheus
+
+# Метрики по интентам
+curl http://localhost:8000/api/v1/metrics/intents
+{
+  "total_intents": 1523,
+  "by_type": {
+    "menu_query": 456,
+    "order_create": 234,
+    "recommendation_request": 189
+  }
+}
+
+# AI Insights WebSocket (real-time events)
+wscat -c ws://localhost:8000/api/v1/insight
+# Получаете события: intent_detected, rule_matched, response_generated
+```
+
+### Управление Backend (v2.2)
+
+```bash
+# Запуск Go backend
+curl -X POST http://localhost:8000/api/v1/admin/backend/start
+
+# Статус системы
+curl http://localhost:8000/api/v1/admin/backend/status
+{
+  "status": "running",
+  "pid": 12345,
+  "uptime_secs": 3600,
+  "restart_count": 0
+}
+
+# Перезапуск при необходимости
+curl -X POST http://localhost:8000/api/v1/admin/backend/restart
+```
+
+### Примеры AI Intent Handling
+
+```python
+# Меню запрос
+User: "Что у вас есть из десертов?"
+AI: [intent: menu_query, category: desserts]
+Response: "🍰 У нас есть тирамису, чизкейк, панна-котта..."
+
+# Создание заказа
+User: "Закажи мне капучино и круассан"
+AI: [intent: order_create, items: ["капучино", "круассан"]]
+Response: "✅ Заказ создан: Капучино + Круассан (350₽)"
+
+# Рекомендации
+User: "Что посоветуешь к стейку?"
+AI: [intent: recommendation_request, context: "стейк"]
+Response: "🍷 К стейку отлично подойдет красное вино Cabernet..."
+
+# Аналитика
+User: "Покажи статистику заказов за неделю"
+AI: [intent: analytics_query, period: "week"]
+Response: "📊 За последнюю неделю: 234 заказа, средний чек 850₽..."
+```
+
+## 🔧 Разработка и тестирование
+
+### Локальная разработка
+
+```bash
+# Запуск локального сервера (порт 8000)
+cargo run --bin local
+
+# Запуск с полным логированием
+RUST_LOG=debug cargo run --bin local
+
+# Release build
+cargo build --release
+
+# Форматирование кода
+cargo fmt
+
+# Linting с warnings
+cargo clippy -- -D warnings
+```
+
+### Тестирование компонентов v2.2
+
+```bash
+# Запуск всех тестов (45 tests)
+cargo test
+
+# Тест AI Engine с insights
+cargo test ai::tests --nocapture
+
+# Тест метрик системы
+cargo test metrics::tests
+
+# Тест Backend Orchestrator
+cargo test orchestration::tests --nocapture
+
+# Тест WebSocket Insights
+cargo test handlers::insight --nocapture
+
+# Тест с выводом логов
+cargo test -- --nocapture
+```
+
+### Debug утилиты
+
+```bash
+# CLI чат клиент для отладки AI
+cargo run --bin chat
+> Привет, покажи меню
+> Закажи мне кофе
+
+# Тест метрик endpoints
+curl http://localhost:8000/api/v1/metrics/dashboard | jq
+curl http://localhost:8000/api/v1/metrics/intents | jq
+
+# Подключение к Insight WebSocket (real-time AI events)
+wscat -c ws://localhost:8000/api/v1/insight
+
+# Проверка здоровья backend orchestrator
+curl http://localhost:8000/api/v1/admin/backend/health | jq
+```
+
+### Тестирование Backend Control API
+
+```bash
+# Статус backend (без запуска orchestrator)
+curl http://localhost:8000/api/v1/admin/backend/status
+# Response: {"status":"disabled","message":"Backend orchestration not enabled"}
+
+# Если orchestrator включен:
+curl -X POST http://localhost:8000/api/v1/admin/backend/start
+curl -X POST http://localhost:8000/api/v1/admin/backend/stop
+curl -X POST http://localhost:8000/api/v1/admin/backend/restart
+```
+
+## 📊 Monitoring & Analytics
+
+### Метрики системы (v2.2)
+
+**Доступные метрики:**
+- ✅ **Intent distribution** - распределение по типам запросов
+- ✅ **Response times** - latency metrics для AI обработки
+- ✅ **Success/failure rates** - процент успешных ответов
+- ✅ **Active connections** - количество WebSocket подключений
+- ✅ **Backend health status** - состояние Go backend
+- ✅ **Memory usage** - использование памяти AI контекстом
+
+**Prometheus Integration:**
+```bash
+# Prometheus scrape endpoint
+curl http://localhost:8000/api/v1/metrics/prometheus
+
+# Пример метрик:
+# ai_intent_total{intent="menu_query"} 456
+# ai_response_duration_seconds_bucket{le="0.5"} 234
+# websocket_connections_active 12
+# backend_health_status 1.0
+# ai_memory_size_bytes 1048576
+```
+
+### AI Insights Real-time Events
+
+**События через WebSocket `/api/v1/insight`:**
+
+| Event Type | Description | Данные |
+|------------|-------------|--------|
+| `intent_detected` | AI определил намерение | `{intent, confidence}` |
+| `rule_matched` | Сработало правило | `{rule_id, priority}` |
+| `context_updated` | Обновлен контекст памяти | `{memory_size}` |
+| `response_generated` | AI сгенерировал ответ | `{response_time}` |
+| `cognitive_analysis` | Завершен анализ Thinker | `{cognitive_state}` |
+| `backend_called` | Вызов Go backend API | `{endpoint, status}` |
+| `metric_recorded` | Записана метрика | `{metric_type, value}` |
+| `processing_started` | Начало обработки запроса | `{request_id}` |
+| `error` | Ошибка обработки | `{error_message}` |
+
+**Пример подключения:**
+```javascript
+const ws = new WebSocket('ws://localhost:8000/api/v1/insight');
+
+ws.onmessage = (event) => {
+  const insight = JSON.parse(event.data);
+  console.log(`[${insight.event_type}]`, insight.data);
+  
+  if (insight.event_type === 'intent_detected') {
+    console.log(`Intent: ${insight.data.intent}, Confidence: ${insight.data.confidence}`);
+  }
+};
+```
+
+## �🔧 Настройка Go Backend
 
 В вашем Go backend нужно настроить:
 
@@ -268,40 +797,67 @@ notifyBot("low_inventory", map[string]interface{}{
 - Роли проверяются для каждой команды
 - CORS настроен (можно ограничить в production)
 
-## 📊 Мониторинг
+## 📊 Production Мониторинг
 
-Логи доступны через Shuttle:
+### Логи Shuttle
 ```bash
+# Просмотр логов в production
 cargo shuttle logs
+
+# Логи с фильтром
+cargo shuttle logs --follow
+
+# Последние 100 строк
+cargo shuttle logs --tail 100
 ```
 
-Уровни логирования (переменная `RUST_LOG`):
-- `error` - только ошибки
-- `warn` - предупреждения
-- `info` - информационные сообщения
-- `debug` - детальная отладка
-- `trace` - максимальная детализация
+### Уровни логирования
+Настройте через переменную `RUST_LOG`:
+- `error` - только критичные ошибки
+- `warn` - предупреждения и ошибки
+- `info` - информационные сообщения (по умолчанию)
+- `debug` - детальная отладка AI engine
+- `trace` - максимальная детализация (включая HTTP запросы)
 
-## 🧪 Тестирование
+**Пример:**
+```bash
+# В Secrets.toml для Shuttle
+RUST_LOG = "info,fodifood_bot=debug"
+```
+
+## 🧪 Production Testing
 
 ### WebSocket тест (через websocat)
 ```bash
 # Установка websocat
 cargo install websocat
 
-# Подключение
+# Подключение к production
 websocat wss://fodifood-bot.shuttleapp.rs/ws
 
 # Отправка сообщений
 {"type":"auth","token":"your-jwt-token"}
 {"type":"chat","text":"Покажите меню"}
+
+# Подключение к AI Insights
+websocat wss://fodifood-bot.shuttleapp.rs/api/v1/insight
 ```
 
 ### Webhook тест
 ```bash
+# Тестирование webhook endpoint
 curl -X POST https://fodifood-bot.shuttleapp.rs/notify \
   -H "Content-Type: application/json" \
   -d '{"event":"new_order","order_id":999,"total":1200}'
+```
+
+### Health Check
+```bash
+# Проверка health endpoint
+curl https://fodifood-bot.shuttleapp.rs/health
+
+# Проверка backend orchestrator
+curl https://fodifood-bot.shuttleapp.rs/api/v1/admin/backend/health | jq
 ```
 
 ## 🌐 Интеграция с Next.js
