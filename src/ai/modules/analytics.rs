@@ -15,7 +15,7 @@ impl CheckIngredientsHandler {
 #[async_trait]
 impl IntentHandler for CheckIngredientsHandler {
     fn name(&self) -> &'static str {
-        "check_ingredients"
+        "checkingredients"  // Match lowercase intent
     }
 
     fn priority(&self) -> u8 {
@@ -84,7 +84,7 @@ impl StockStatusHandler {
 #[async_trait]
 impl IntentHandler for StockStatusHandler {
     fn name(&self) -> &'static str {
-        "stock_status"
+        "stockstatus"  // Match lowercase intent
     }
 
     fn priority(&self) -> u8 {
@@ -145,7 +145,7 @@ impl GetStatisticsHandler {
 #[async_trait]
 impl IntentHandler for GetStatisticsHandler {
     fn name(&self) -> &'static str {
-        "get_statistics"
+        "getstatistics"  // Match lowercase intent
     }
 
     fn priority(&self) -> u8 {
@@ -200,7 +200,7 @@ impl SalesAnalysisHandler {
 #[async_trait]
 impl IntentHandler for SalesAnalysisHandler {
     fn name(&self) -> &'static str {
-        "sales_analysis"
+        "salesanalysis"  // Match lowercase intent
     }
 
     fn priority(&self) -> u8 {

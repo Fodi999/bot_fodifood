@@ -15,7 +15,7 @@ impl MenuHandler {
 #[async_trait]
 impl IntentHandler for MenuHandler {
     fn name(&self) -> &'static str {
-        "show_menu"
+        "showmenu"  // Match lowercase intent
     }
 
     fn priority(&self) -> u8 {
@@ -55,7 +55,7 @@ impl SearchMenuHandler {
 #[async_trait]
 impl IntentHandler for SearchMenuHandler {
     fn name(&self) -> &'static str {
-        "search_menu"
+        "searchmenu"  // Match lowercase intent
     }
 
     fn priority(&self) -> u8 {
@@ -109,7 +109,7 @@ impl FilterByIngredientHandler {
 #[async_trait]
 impl IntentHandler for FilterByIngredientHandler {
     fn name(&self) -> &'static str {
-        "filter_by_ingredient"
+        "searchbyingredient"  // Match lowercase intent (это SearchByIngredient в enum)
     }
 
     fn priority(&self) -> u8 {

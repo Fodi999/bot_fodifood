@@ -100,6 +100,15 @@ pub struct OrdersResponse {
     pub orders: Vec<Order>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateOrderResponse {
+    pub message: String,
+    #[serde(rename = "orderId")]
+    pub order_id: String,
+    pub status: String,
+    pub total: f64,
+}
+
 // ============================================================================
 // Inventory Types
 // ============================================================================

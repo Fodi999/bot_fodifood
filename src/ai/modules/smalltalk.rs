@@ -75,7 +75,7 @@ impl DeliveryHandler {
 #[async_trait]
 impl IntentHandler for DeliveryHandler {
     fn name(&self) -> &'static str {
-        "delivery_info"
+        "deliveryinfo"  // Match lowercase intent
     }
 
     fn priority(&self) -> u8 {

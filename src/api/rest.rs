@@ -529,10 +529,10 @@ pub async fn chat_handler(
     let intent = IntentClassifier::classify(&req.message);
     tracing::info!("🎯 Detected intent: {:?}", intent);
 
-    // Обрабатываем сообщение через AI
+    // 🚀 NEW: Process through plugin system with backend integration
     let response = state
         .ai
-        .process_message(&req.user_id, &req.message)
+        .process_with_plugins(&req.user_id, &req.message, &state)
         .await
         .map_err(|e| {
             tracing::error!("❌ AI processing error: {}", e);

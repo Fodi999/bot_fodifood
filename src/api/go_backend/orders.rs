@@ -104,12 +104,25 @@ impl OrdersClient {
             .await
             .context("Failed to create order")?;
 
-        let order = response
-            .json::<Order>()
+        // Parse CreateOrderResponse first
+        let create_response = response
+            .json::<super::types::CreateOrderResponse>()
             .await
             .context("Failed to parse order response")?;
 
-        Ok(order)
+        // Convert to Order struct for compatibility
+        Ok(Order {
+            id: create_response.order_id,
+            user_id: None,
+            status: create_response.status,
+            total: create_response.total,
+            address: None,
+            phone: None,
+            comment: None,
+            created_at: None,
+            items: vec![],
+            user: None,
+        })
     }
 
     /// Update order status (admin only)

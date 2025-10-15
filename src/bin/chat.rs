@@ -29,6 +29,9 @@ async fn main() {
         go_backend_url: std::env::var("GO_BACKEND_URL")
             .unwrap_or_else(|_| "http://localhost:8080/api".to_string()),
         jwt_secret: "test_secret".to_string(),
+        orchestrator_enabled: false,
+        orchestrator_managed: false,
+        go_backend_bin: String::new(),
     };
 
     let engine = AIEngine::new(&config);

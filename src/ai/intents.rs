@@ -225,19 +225,27 @@ impl IntentClassifier {
                 "где мой заказ",
                 "покажи заказ",
                 "покажи мой заказ",
+                "покажи мои заказы",  // NEW: множественное число
+                "мои заказы",         // NEW: короткая форма
+                "список заказов",     // NEW: список
                 "сколько ждать",
                 "когда будет",
                 "трек",
                 "отследить",
                 "проверить заказ",
+                "проверь заказ",      // NEW: императив
+                "заказы",             // NEW: просто "заказы"
                 // English
                 "order status",
                 "where is my order",
                 "track order",
                 "check order",
+                "my orders",          // NEW: plural
+                "show orders",        // NEW
                 // Polski
                 "status zamówienia",
                 "gdzie jest zamówienie",
+                "moje zamówienia",    // NEW
             ],
         ) {
             candidates.push(IntentCandidate {
@@ -268,15 +276,21 @@ impl IntentClassifier {
                 "сделать заказ",
                 "новый заказ",
                 "закажу",
+                "закажи",      // NEW: "закажи урамаки"
+                "оформи заказ", // NEW: "оформи заказ"
                 "буду заказывать",
                 "хочу купить",
                 "возьму",
                 "оформлю заказ",
+                "добавь в заказ", // NEW: "добавь в заказ колу"
+                "положи в корзину", // NEW: "положи в корзину"
                 // English
                 "create order",
                 "make order",
                 "place order",
                 "new order",
+                "i want to order",
+                "order me",
                 // Polski
                 "złóż zamówienie",
                 "nowe zamówienie",

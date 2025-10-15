@@ -4,10 +4,12 @@ use axum::{
 };
 use tower_http::cors::CorsLayer;
 use std::net::SocketAddr;
+use std::sync::Arc;
 
 use fodifood_bot::{
     api, config::Config, handlers, state::AppState,
 };
+use fodifood_bot::orchestration::{BackendOrchestrator, backend::OrchestratorConfig};
 
 #[tokio::main]
 async fn main() {
@@ -24,7 +26,41 @@ async fn main() {
     tracing::info!("📡 Go Backend URL: {}", config.go_backend_url);
 
     // Initialize state
-    let state = AppState::new(config);
+    let mut state = AppState::new(config.clone());
+    
+    // Initialize Backend Orchestrator if enabled
+    if config.orchestrator_enabled {
+        tracing::info!("🎯 Backend Orchestrator enabled");
+        
+        let orchestrator_config = OrchestratorConfig {
+            binary_path: config.go_backend_bin.clone(),
+            working_dir: Some(".".to_string()),
+            base_url: config.go_backend_url.clone(),
+            health_check_interval_secs: 30,
+            health_check_timeout_secs: 5,
+            auto_restart: config.orchestrator_managed,
+            max_restart_attempts: 3,
+        };
+        
+        let orchestrator = Arc::new(BackendOrchestrator::new(orchestrator_config));
+        state.backend_orchestrator = Some(orchestrator.clone());
+        
+        // Start health monitoring if managed
+        if config.orchestrator_managed {
+            tracing::info!("🔄 Auto-management enabled - will monitor and restart backend");
+            let orch_clone = orchestrator.clone();
+            tokio::spawn(async move {
+                let _ = orch_clone.start_health_monitoring().await;
+            });
+        } else {
+            tracing::info!("📊 Monitoring only - backend managed externally");
+        }
+        
+        tracing::info!("✅ Backend Orchestrator initialized");
+    } else {
+        tracing::info!("⚠️  Backend Orchestrator disabled (set ORCHESTRATOR_ENABLED=true to enable)");
+    }
+    
     tracing::info!("✅ Application state initialized");
     tracing::info!("🧠 AI Engine ready with {} intent handlers", state.ai.registry_stats().0);
     tracing::info!("📊 Metrics collector initialized");
