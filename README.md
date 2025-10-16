@@ -1,8 +1,30 @@
 # FodiFood Intelligent Bot 🦐🤖
 
-**v2.2** - Advanced AI Restaurant Bot with Backend Orchestration
+**v2.3** - Business Management & User Role Administration
 
-Интеллектуальный бот на Rust для ресторана FodiFood - центральный коммуникационный узел между клиентами, администраторами и бизнес-логикой с расширенными возможностями мониторинга и управления.
+Интеллектуальный бот на Rust для ресторана FodiFood - центральный коммуникационный узел между клиентами, администраторами и бизнес-логикой с расширенными возможностями управления бизнесами и пользователями.
+
+## 🚀 Что нового в v2.3
+
+### ✅ Завершено (95% готовности):
+
+**Business Management API** ✅ **NEW!**
+- **POST /businesses**: Создание нового бизнеса с аутентификацией
+- **GET /businesses**: Получение списка всех бизнесов
+- **Role-based Access**: Только admin и business_owner могут создавать бизнесы
+- **Full Integration**: Поддержка вложенных структур (BusinessFull, TokenFull, NestedBusiness)
+- **Debug Logging**: Логирование сырых JSON ответов от Go backend
+
+**User Role Management** ✅ **NEW!**
+- **PATCH /api/v1/user/role**: Обновление роли пользователя
+- **JWT Token Extraction**: Автоматическое извлечение user_id из токена
+- **Go Backend Proxy**: Проксирование в `/api/admin/users/update-role`
+- **String Roles**: Полная совместимость с Go backend (String вместо Enum)
+
+**Authentication Refactoring** ✅
+- Обновлена VerifyTokenResponse для работы со строковыми ролями
+- Все role checks обновлены на string comparison
+- Исправлена совместимость между Rust и Go типами
 
 ## 🚀 Что нового в v2.2
 
@@ -122,8 +144,9 @@
 - `/api/orders` - заказы
 - `/api/ingredients` - склад
 - `/api/stats` - статистика
-- **`/api/businesses`** - список бизнесов (NEW!)
+- **`/api/businesses`** - список бизнесов (GET, POST) ✨
 - **`/api/metrics/:id`** - метрики бизнеса (NEW!)
+- **`/api/admin/users/update-role`** - обновление роли пользователя ✨
 
 ### 💼 Business Intelligence API (NEW!)
 - **Investment Scoring**: Автоматический расчет балла 0-100
@@ -444,8 +467,82 @@ Service health check
 #### POST `/api/v1/auth/login`
 Авторизация пользователя
 
+#### PATCH `/api/v1/user/role` ✨ NEW!
+Обновление роли пользователя (извлекает user_id из JWT токена)
+
+```bash
+curl -X PATCH http://localhost:8000/api/v1/user/role \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"role": "business_owner"}'
+
+# Response:
+{
+  "status": "ok",
+  "message": "Role updated to business_owner",
+  "newRole": "business_owner"
+}
+```
+
 #### GET `/api/v1/products`
 Получить список продуктов
+
+#### GET `/api/v1/businesses` ✨ NEW!
+Получить список всех бизнесов
+
+```bash
+curl http://localhost:8000/api/v1/businesses
+
+# Response: массив бизнесов
+[
+  {
+    "id": "uuid",
+    "name": "Fodi Sushi",
+    "category": "Restaurant",
+    "city": "Gdansk",
+    "isActive": true
+  }
+]
+```
+
+#### POST `/api/v1/businesses` ✨ NEW!
+Создать новый бизнес (требует роль admin или business_owner)
+
+```bash
+curl -X POST http://localhost:8000/api/v1/businesses \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Sushi Bar",
+    "description": "Best sushi in town",
+    "category": "Japanese Restaurant",
+    "city": "Gdansk"
+  }'
+
+# Response:
+{
+  "message": "✅ Business created successfully",
+  "business": {
+    "id": "uuid",
+    "ownerId": "user_id",
+    "name": "Sushi Bar",
+    "description": "Best sushi in town",
+    "category": "Japanese Restaurant",
+    "city": "Gdansk",
+    "isActive": true,
+    "createdAt": "2025-10-17T01:13:17Z",
+    "updatedAt": "2025-10-17T01:13:17Z"
+  },
+  "token": {
+    "id": "token_uuid",
+    "businessId": "uuid",
+    "symbol": "SUSH",
+    "totalSupply": 1000,
+    "price": 19.0,
+    "createdAt": "2025-10-17T01:13:17Z"
+  }
+}
+```
 
 #### GET `/api/v1/admin/stats`
 Административная статистика
@@ -590,6 +687,8 @@ src/
 │   ├── admin_ws.rs          # Admin WebSocket
 │   ├── insight_ws.rs        # 📡 AI Insight WebSocket
 │   ├── backend_control.rs   # 🎯 Backend control API
+│   ├── businesses.rs        # 💼 Business management (NEW! v2.3)
+│   ├── user.rs              # 👤 User role management (NEW! v2.3)
 │   └── go_backend/          # Go backend integration
 │       ├── mod.rs
 │       ├── auth.rs
@@ -1053,6 +1152,34 @@ MIT License - свободно используйте в своих проект
 - Проверьте валидность OpenAI API ключа
 
 ## 📝 Changelog
+
+### v2.3 (2025-10-17) - Business Management & User Roles 💼👤
+
+**✨ Новые возможности:**
+- 💼 **Business Management API**: 
+  - GET `/api/v1/businesses` - список всех бизнесов
+  - POST `/api/v1/businesses` - создание бизнеса с аутентификацией
+  - Полная поддержка вложенных структур (BusinessFull, TokenFull)
+  - Debug logging для отладки JSON от Go backend
+- 👤 **User Role Management**:
+  - PATCH `/api/v1/user/role` - обновление роли пользователя
+  - Извлечение user_id из JWT токена (без передачи в payload)
+  - Проксирование в Go backend `/api/admin/users/update-role`
+- 🔐 **Authentication Improvements**:
+  - Обновлена VerifyTokenResponse для работы со строковыми ролями
+  - Все проверки ролей обновлены на string comparison
+  - Исправлена совместимость между Rust enum и Go string roles
+
+**🔧 Улучшения:**
+- Добавлена поддержка создания бизнеса с role-based access control
+- Улучшена обработка JSON с вложенными объектами
+- Добавлено логирование сырых ответов от Go backend
+- Оптимизирована структура API модулей
+
+**📚 Документация:**
+- Добавлены примеры Business Management API
+- Обновлена документация User Role endpoint
+- Расширена структура проекта в README
 
 ### v2.2 (2025-10-16) - Business Intelligence Update 💼
 
