@@ -44,6 +44,8 @@ impl ResponseGenerator {
             Intent::StockStatus => analytics::stock_status_response(),
             Intent::GetStatistics => analytics::statistics_response(),
             Intent::SalesAnalysis => analytics::sales_analysis_response(),
+            Intent::AnalyzeBusiness => analytics::business_analysis_response(context),
+            Intent::CompareBusinesses => analytics::compare_businesses_response(context),
         }
     }
 }

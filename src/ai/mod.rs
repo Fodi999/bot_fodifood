@@ -1,4 +1,5 @@
 pub mod admin_assistant; // 🔧 Admin AI assistant
+pub mod analysis; // 💡 AI-powered business analysis
 pub mod intent_handler; // 🎯 Intent handler system
 mod intents;
 mod memory;

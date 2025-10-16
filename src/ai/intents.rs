@@ -28,6 +28,8 @@ pub enum Intent {
     // Аналитика (для менеджеров)
     GetStatistics,
     SalesAnalysis,
+    AnalyzeBusiness,     // 📊 Анализ бизнеса по метрикам
+    CompareBusinesses,   // 📊 Сравнение бизнесов
 
     // Доставка
     DeliveryInfo,
@@ -681,6 +683,58 @@ impl IntentClassifier {
                 intent: Intent::GetStatistics,
                 priority: IntentPriority::Low,
                 score,
+            });
+        }
+
+        // Анализ бизнеса
+        if let Some(score) = Self::match_keywords(
+            &text_lower,
+            &[
+                "проанализируй бизнес",
+                "анализ бизнеса",
+                "метрики бизнеса",
+                "analyze business",
+                "business analysis",
+                "business metrics",
+                "как дела у бизнеса",
+                "покажи метрики",
+                "оценка бизнеса",
+                "инвестиционная оценка",
+                "стоит ли инвестировать",
+                "рентабельность",
+                "roi бизнеса",
+            ],
+        ) {
+            candidates.push(IntentCandidate {
+                intent: Intent::AnalyzeBusiness,
+                priority: IntentPriority::Medium,
+                score: score + 3, // Повышенный приоритет для специфичного запроса
+            });
+        }
+
+        // === Сравнение бизнесов ===
+        if let Some(score) = Self::match_keywords(
+            &text_lower,
+            &[
+                "сравни бизнес",
+                "сравнить бизнес",
+                "сравнение бизнес",
+                "compare business",
+                "comparison",
+                "что лучше",
+                "какой выбрать",
+                "какой бизнес лучше",
+                "разница между",
+                "отличия бизнес",
+                "или",
+                "versus",
+                "vs",
+            ],
+        ) {
+            candidates.push(IntentCandidate {
+                intent: Intent::CompareBusinesses,
+                priority: IntentPriority::High,
+                score: score + 4, // Высокий приоритет для сравнения
             });
         }
 

@@ -2,10 +2,11 @@ mod ai;
 mod api;
 mod config;
 mod handlers;
+mod metrics;
 mod models;
 mod orchestration; // 🎯 Backend orchestration
+mod services; // 🌐 External service clients
 mod state;
-mod metrics;
 
 use shuttle_axum::axum::{
     routing::{get, post},

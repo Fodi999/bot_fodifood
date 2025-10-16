@@ -1,8 +1,9 @@
+pub mod analytics;
+pub mod business;
 pub mod menu;
 pub mod orders;
-pub mod smalltalk;
-pub mod analytics;
 pub mod recommendations;
+pub mod smalltalk;
 
 use super::intent_handler::IntentRegistry;
 
@@ -45,6 +46,10 @@ pub fn register_all_handlers(registry: &mut IntentRegistry) {
     registry.register(Box::new(analytics::StockStatusHandler::new()));
     registry.register(Box::new(analytics::GetStatisticsHandler::new()));
     registry.register(Box::new(analytics::SalesAnalysisHandler::new()));
+
+    // Business analysis handlers
+    registry.register(Box::new(business::AnalyzeBusinessHandler));
+    registry.register(Box::new(business::CompareBusinessesHandler));
 
     // Recommendation handlers
     registry.register(Box::new(recommendations::RecommendationHandler::new()));
