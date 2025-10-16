@@ -691,26 +691,28 @@ impl IntentClassifier {
         if let Some(score) = Self::match_keywords(
             &text_lower,
             &[
-                "проанализируй бизнес",
-                "анализ бизнеса",
-                "метрики бизнеса",
-                "analyze business",
-                "business analysis",
-                "business metrics",
-                "как дела у бизнеса",
+                "проанализируй",
+                "анализ",
+                "метрики",
+                "analyze",
+                "analysis",
+                "metrics",
+                "оценка",
                 "покажи метрики",
-                "оценка бизнеса",
                 "инвестиционная оценка",
                 "стоит ли инвестировать",
                 "рентабельность",
                 "roi бизнеса",
             ],
         ) {
-            candidates.push(IntentCandidate {
-                intent: Intent::AnalyzeBusiness,
-                priority: IntentPriority::Medium,
-                score: score + 3, // Повышенный приоритет для специфичного запроса
-            });
+            // Дополнительная проверка: должно быть упоминание "бизнес" или "business"
+            if text_lower.contains("бизнес") || text_lower.contains("business") {
+                candidates.push(IntentCandidate {
+                    intent: Intent::AnalyzeBusiness,
+                    priority: IntentPriority::High, // Повысили до High для приоритета над Greeting
+                    score: score + 5, // Повышенный приоритет для специфичного запроса
+                });
+            }
         }
 
         // === Сравнение бизнесов ===

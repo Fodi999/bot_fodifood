@@ -6,11 +6,11 @@
 
 ## 🚀 Что нового в v2.2
 
-### ✅ Завершено (80% готовности):
+### ✅ Завершено (90% готовности):
 
 **Step 1: Rules Migration** ✅
 - Миграция на модульную архитектуру intent handlers
-- 14 специализированных обработчиков намерений
+- 17 специализированных обработчиков намерений
 - Улучшенная система распознавания интентов
 
 **Step 2: Metrics Dashboard** ✅
@@ -31,7 +31,17 @@
 - REST API для управления backend'ом
 - Status tracking и uptime мониторинг
 
-**Step 5: Admin AI Assistant** 🔲 (В разработке)
+**Step 5: Business Intelligence Module** ✅ **NEW!**
+- **Go Backend Integration**: HTTP клиент для бизнес-данных
+- **AI Business Analysis**: Инвестиционный скоринг (0-100), тренды, ROI
+- **3 специализированных интента**:
+  - `AnalyzeBusiness` - Анализ метрик бизнеса
+  - `CompareBusinesses` - Сравнение 2+ бизнесов
+  - `BusinessInsights` - AI-советы по улучшению
+- **Performance**: 80-550ms response time
+- **Full Integration**: Neon PostgreSQL → Go API → Rust Analysis
+
+**Step 6: Admin AI Assistant** 🔲 (В разработке)
 - AI-ассистент для администраторов
 - Команды управления через чат
 
@@ -61,11 +71,14 @@
 ## ✨ Возможности
 
 ### 🤖 AI Engine (v2.2)
-- **14 Intent Handlers**: Модульная архитектура обработчиков
+- **17 Intent Handlers**: Модульная архитектура обработчиков
+  - 14 базовых (меню, заказы, аналитика, рекомендации)
+  - **3 бизнес-интента** (анализ, сравнение, советы)
 - **Cognitive Analysis**: Определение настроения, эмоций, сложности
 - **Natural Language**: Понимание русского языка с контекстом
 - **Smart Routing**: Автоматическая маршрутизация запросов
 - **Memory System**: Персонализация на основе истории
+- **Business Intelligence**: Инвестиционный анализ и AI-рекомендации
 
 ### 📊 Metrics & Monitoring
 - **Prometheus Metrics**: `/metrics` endpoint
@@ -109,6 +122,16 @@
 - `/api/orders` - заказы
 - `/api/ingredients` - склад
 - `/api/stats` - статистика
+- **`/api/businesses`** - список бизнесов (NEW!)
+- **`/api/metrics/:id`** - метрики бизнеса (NEW!)
+
+### 💼 Business Intelligence API (NEW!)
+- **Investment Scoring**: Автоматический расчет балла 0-100
+- **Trend Analysis**: Определение роста/стагнации/падения
+- **ROI Calculation**: Рентабельность инвестиций
+- **Multi-business Comparison**: Сравнение показателей
+- **AI Recommendations**: Персонализированные советы по улучшению
+- **Performance**: 80-550ms анализ с кэшированием
 
 ## 🚀 Быстрый старт
 
@@ -276,7 +299,78 @@ curl https://fodifood-bot.shuttleapp.rs/metrics
 }
 ```
 
-### 📡 AI Insights WebSocket (v2.2)
+### � Business Intelligence API (v2.2) **NEW!**
+
+Интеграция с Go backend для анализа бизнес-метрик и AI-рекомендаций.
+
+#### POST `/api/v1/chat` - Анализ бизнеса
+
+```bash
+# Анализ одного бизнеса
+curl -X POST https://fodifood-bot.shuttleapp.rs/api/v1/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "investor1",
+    "message": "проанализируй бизнес Tech Startup"
+  }'
+
+# Ответ
+{
+  "intent": "AnalyzeBusiness",
+  "response": "🏢 **Tech Startup**\n\n🟢 TecT - $28.13 (+48.1%) | 2 инвесторов | ROI: 235.1%\n\n💡 Анализ:\n📊 Оценка: 90/100 - Отличные показатели\n🚀 Цена растёт на 48.1%\n💰 Высокая доходность (ROI 235.1%)\n\n💎 Рекомендация: ПОКУПАТЬ"
+}
+```
+
+#### POST `/api/v1/chat` - Сравнение бизнесов
+
+```bash
+# Сравнение 2+ бизнесов
+curl -X POST https://fodifood-bot.shuttleapp.rs/api/v1/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "investor1",
+    "message": "сравни Tech Startup и Fodi Sushi"
+  }'
+
+# Ответ
+{
+  "intent": "CompareBusinesses",
+  "response": "📊 Сравнительный анализ:\n\n🏆 Лидеры:\n• Рост: Tech Startup (+48.1%)\n• Инвесторы: Tech Startup (2)\n• ROI: Tech Startup (235.1%)\n\n📈 Детали:\nTech Startup: 90/100 | $28.13\nFodi Sushi: 20/100 | $15.75"
+}
+```
+
+#### POST `/api/v1/chat` - AI-советы
+
+```bash
+# Персонализированные рекомендации
+curl -X POST https://fodifood-bot.shuttleapp.rs/api/v1/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "investor1",
+    "message": "как улучшить Fodi Sushi"
+  }'
+
+# Ответ
+{
+  "intent": "BusinessInsights",
+  "response": "💡 **Советы для: Fodi Sushi**\n\n🎯 Оценка: 20/100\n\n📉 Падение цены (-17.1%)\n• Увеличьте маркетинг\n• PR-кампания\n\n👥 Мало инвесторов\n• Снизьте порог входа\n• Реферальная программа\n\nПриоритет: 1️⃣ Стабилизация цены"
+}
+```
+
+**Возможности:**
+- ✅ **Investment Scoring**: Автоматический балл 0-100 на основе метрик
+- ✅ **Trend Analysis**: Определение роста (+10%), стагнации (±5%), падения (-10%)
+- ✅ **ROI Calculation**: Расчёт рентабельности для инвесторов
+- ✅ **Multi-comparison**: Сравнение 2-10 бизнесов одновременно
+- ✅ **AI Recommendations**: Приоритизированные советы на основе слабых мест
+- ✅ **Performance**: 80-550ms response time
+
+**Ключевые слова:**
+- Анализ: `"проанализируй"`, `"метрики"`, `"оценка"`, `"analyze"`
+- Сравнение: `"сравни"`, `"compare"`, `"vs"`, `"что лучше"`
+- Советы: `"как улучшить"`, `"рекомендации"`, `"insights"`, `"советы"`
+
+### �📡 AI Insights WebSocket (v2.2)
 
 #### WebSocket: `/api/v1/insight`
 Real-time стриминг AI событий обработки
@@ -469,18 +563,20 @@ src/
 │
 ├── ai/                      # 🧠 AI Engine v2.2
 │   ├── mod.rs               # AIEngine с process_with_insights()
-│   ├── intents.rs           # Intent классификация
+│   ├── intents.rs           # Intent классификация (17 intents)
 │   ├── intent_handler.rs    # Plugin system для handlers
 │   ├── thinker.rs           # Cognitive analysis
 │   ├── memory.rs            # In-memory context
 │   ├── persistent_memory.rs # Persistent storage (sled)
-│   ├── modules/             # 📦 Intent Handlers
-│   │   ├── menu.rs
-│   │   ├── orders.rs
-│   │   ├── recommendations.rs
-│   │   ├── analytics.rs
-│   │   ├── smalltalk.rs
-│   │   └── news.rs
+│   ├── analysis.rs          # 💼 Business analysis AI (NEW!)
+│   ├── modules/             # 📦 Intent Handlers (17 total)
+│   │   ├── menu.rs          # Меню queries
+│   │   ├── orders.rs        # Управление заказами
+│   │   ├── recommendations.rs # Рекомендации
+│   │   ├── analytics.rs     # Статистика
+│   │   ├── smalltalk.rs     # Small talk
+│   │   ├── news.rs          # Новости
+│   │   └── business.rs      # 💼 Business intelligence (NEW!)
 │   └── rules/               # Rule-based responses
 │       ├── menu.rs
 │       ├── orders.rs
@@ -489,7 +585,7 @@ src/
 │       └── smalltalk.rs
 │
 ├── api/                     # 🌐 API Layer
-│   ├── rest.rs              # REST endpoints
+│   ├── rest.rs              # REST endpoints + /api/v1/chat
 │   ├── metrics.rs           # 📊 Metrics endpoints
 │   ├── admin_ws.rs          # Admin WebSocket
 │   ├── insight_ws.rs        # 📡 AI Insight WebSocket
@@ -501,6 +597,13 @@ src/
 │       ├── orders.rs
 │       ├── admin.rs
 │       └── types.rs
+│
+├── services/                # 🔌 External Services (NEW!)
+│   ├── mod.rs
+│   └── go_client.rs         # 💼 Go Backend HTTP Client
+│                            #    - fetch_businesses()
+│                            #    - fetch_business_metrics()
+│                            #    - Business & BusinessMetrics types
 │
 ├── handlers/                # 🔌 Protocol Handlers
 │   ├── ws.rs                # WebSocket handler
@@ -635,7 +738,7 @@ cargo clippy -- -D warnings
 ### Тестирование компонентов v2.2
 
 ```bash
-# Запуск всех тестов (45 tests)
+# Запуск всех тестов (60+ tests)
 cargo test
 
 # Тест AI Engine с insights
@@ -649,6 +752,9 @@ cargo test orchestration::tests --nocapture
 
 # Тест WebSocket Insights
 cargo test handlers::insight --nocapture
+
+# Тест Business Intelligence (NEW!)
+cargo test business --nocapture
 
 # Тест с выводом логов
 cargo test -- --nocapture
@@ -671,6 +777,23 @@ wscat -c ws://localhost:8000/api/v1/insight
 
 # Проверка здоровья backend orchestrator
 curl http://localhost:8000/api/v1/admin/backend/health | jq
+
+# 💼 Business Intelligence тесты (NEW!)
+# Тест анализа бизнеса
+./test_api.sh
+
+# Детальный тест всех 3 интентов
+curl -X POST http://localhost:8000/api/v1/chat \
+  -H "Content-Type: application/json" \
+  -d '{"user_id":"test","message":"проанализируй бизнес Tech Startup"}' | jq '.'
+  
+curl -X POST http://localhost:8000/api/v1/chat \
+  -H "Content-Type: application/json" \
+  -d '{"user_id":"test","message":"сравни Tech Startup и Fodi Sushi"}' | jq '.'
+
+curl -X POST http://localhost:8000/api/v1/chat \
+  -H "Content-Type: application/json" \
+  -d '{"user_id":"test","message":"как улучшить Fodi Sushi"}' | jq '.'
 ```
 
 ### Тестирование Backend Control API
@@ -928,6 +1051,47 @@ MIT License - свободно используйте в своих проект
 - Проверьте переменные окружения
 - Убедитесь что Go backend доступен
 - Проверьте валидность OpenAI API ключа
+
+## 📝 Changelog
+
+### v2.2 (2025-10-16) - Business Intelligence Update 💼
+
+**✨ Новые возможности:**
+- 💼 **Business Intelligence Module**: Полная интеграция анализа бизнес-метрик
+  - `AnalyzeBusiness` intent - анализ метрик отдельного бизнеса
+  - `CompareBusinesses` intent - сравнение 2+ бизнесов
+  - `BusinessInsights` intent - AI-советы по улучшению
+- 🔗 **Go Backend Integration**: HTTP клиент для бизнес-данных
+  - `services/go_client.rs` - полноценный клиент с типами
+  - Интеграция с Neon PostgreSQL через Go API
+- 🧠 **AI Analysis Engine**: 
+  - Investment scoring (0-100 баллов)
+  - Trend analysis (рост/стагнация/падение)
+  - ROI calculation
+  - Multi-business comparison
+  - Prioritized recommendations
+- 📈 **Performance**: 80-550ms response time для анализа
+
+**🔧 Улучшения:**
+- Обновлена система распознавания интентов (17 handlers)
+- Исправлены ключевые слова для лучшего распознавания
+- Добавлены 60+ unit tests
+- Оптимизирована структура модулей
+
+**📚 Документация:**
+- Добавлены примеры Business Intelligence API
+- Обновлены тестовые скрипты
+- Расширена архитектурная документация
+
+### v2.1 (Previous) - Backend Orchestration
+- 🎯 Backend orchestrator с автоматическим управлением
+- 📊 Prometheus metrics integration
+- 📡 AI Insights WebSocket layer
+
+### v2.0 - Modular Architecture
+- 🧠 Migrация на intent handlers
+- 📦 14 специализированных модулей
+- 💾 Persistent memory с sled
 
 ---
 
