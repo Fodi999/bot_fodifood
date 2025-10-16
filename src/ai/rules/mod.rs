@@ -46,6 +46,7 @@ impl ResponseGenerator {
             Intent::SalesAnalysis => analytics::sales_analysis_response(),
             Intent::AnalyzeBusiness => analytics::business_analysis_response(context),
             Intent::CompareBusinesses => analytics::compare_businesses_response(context),
+            Intent::BusinessInsights => analytics::business_insights_response(context),
         }
     }
 }

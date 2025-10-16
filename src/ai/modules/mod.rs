@@ -50,6 +50,7 @@ pub fn register_all_handlers(registry: &mut IntentRegistry) {
     // Business analysis handlers
     registry.register(Box::new(business::AnalyzeBusinessHandler));
     registry.register(Box::new(business::CompareBusinessesHandler));
+    registry.register(Box::new(business::BusinessInsightsHandler));
 
     // Recommendation handlers
     registry.register(Box::new(recommendations::RecommendationHandler::new()));

@@ -101,6 +101,17 @@ fn extract_business_name(input: &str) -> String {
         "show",
         "metrics",
         "for",
+        // Для BusinessInsights
+        "советы",
+        "как",
+        "улучшить",
+        "рекомендации",
+        "что",
+        "делать",
+        "insights",
+        "advice",
+        "recommendations",
+        "improve",
     ];
 
     let words: Vec<&str> = input_lower
@@ -287,53 +298,118 @@ impl IntentHandler for CompareBusinessesHandler {
 fn extract_business_names_for_comparison(input: &str) -> Vec<String> {
     let input_lower = input.to_lowercase();
 
-    // Убираем стоп-слова для сравнения
-    let stop_words = [
-        "сравни", "сравнить", "сравнение", "compare", "comparison",
-        "бизнес", "бизнесы", "бизнеса", "business", "businesses",
-        "и", "or", "vs", "versus", "с", "между", "with", "против"
-    ];
-
     // Разделители для списка бизнесов
-    let delimiters = [" и ", " or ", " vs ", " versus ", ","];
+    let delimiters = [" и ", " or ", " vs ", " versus ", ", "];
 
-    let mut cleaned = input_lower.clone();
-    for word in &stop_words {
-        cleaned = cleaned.replace(word, " ");
-    }
-
-    // Пробуем разделить по разделителям
-    let mut names = Vec::new();
+    // Сначала пробуем найти разделители в оригинальном тексте
+    let mut parts: Vec<String> = Vec::new();
+    
     for delimiter in &delimiters {
-        if cleaned.contains(delimiter) {
-            names = cleaned
+        if input_lower.contains(delimiter) {
+            parts = input_lower
                 .split(delimiter)
-                .map(|s| s.trim().to_string())
-                .filter(|s| !s.is_empty())
+                .map(|s| s.to_string())
                 .collect();
             break;
         }
     }
 
-    // Если не нашли разделители, пробуем просто split по пробелам
-    if names.is_empty() {
-        let words: Vec<String> = cleaned
-            .split_whitespace()
-            .map(|s| s.to_string())
-            .filter(|s| !s.is_empty() && s.len() > 2) // Исключаем короткие слова
-            .collect();
-        
-        // Если слов больше 2, пытаемся объединить в фразы
-        if words.len() >= 2 {
-            // Простой подход: берём первую половину и вторую половину
-            let mid = words.len() / 2;
-            let first = words[..mid].join(" ");
-            let second = words[mid..].join(" ");
-            names = vec![first, second];
-        }
+    // Очищаем каждую часть от команд и стоп-слов
+    let command_words = ["сравни", "сравнить", "сравнение", "compare", "comparison"];
+    let stop_words = ["бизнес", "бизнесы", "бизнеса", "бизнесов", "business", "businesses"];
+    
+    parts.into_iter()
+        .map(|part| {
+            let mut cleaned = part;
+            // Убираем команды
+            for word in &command_words {
+                cleaned = cleaned.replace(word, " ");
+            }
+            // Убираем стоп-слова
+            for word in &stop_words {
+                cleaned = cleaned.replace(word, " ");
+            }
+            // Очищаем лишние пробелы
+            cleaned.split_whitespace().collect::<Vec<_>>().join(" ")
+        })
+        .filter(|s| !s.is_empty() && s.len() > 2)
+        .collect()
+}
+
+/// 💡 Обработчик советов по бизнесу
+pub struct BusinessInsightsHandler;
+
+#[async_trait]
+impl IntentHandler for BusinessInsightsHandler {
+    fn name(&self) -> &'static str {
+        "businessinsights"
     }
 
-    names
+    fn priority(&self) -> u8 {
+        82 // Высокий приоритет для аналитических советов
+    }
+
+    async fn handle(&self, input: &str, ctx: &mut Context, state: &AppState) -> Option<String> {
+        tracing::info!("💡 Handling business insights request for user: {}", ctx.user_id);
+
+        // Извлекаем название бизнеса
+        let business_query = extract_business_name(input);
+
+        if business_query.is_empty() {
+            return Some(
+                "💡 **Советы по улучшению бизнеса**\n\n\
+                 Укажите название бизнеса для получения персональных рекомендаций.\n\n\
+                 📌 Пример: 'советы для Tech Startup' или 'как улучшить Fodi Sushi'\n\n\
+                 Я проанализирую метрики и дам конкретные советы по:\n\
+                 • Увеличению ROI\n\
+                 • Привлечению инвесторов\n\
+                 • Стабилизации цены токена\n\
+                 • Оптимизации расходов"
+                .to_string()
+            );
+        }
+
+        // Ищем бизнес
+        match find_business(&business_query, state).await {
+            Ok(Some((business_id, business_name))) => {
+                tracing::info!("💡 Generating insights for: {}", business_name);
+
+                // Получаем метрики
+                match fetch_business_metrics(&business_id).await {
+                    Ok(metrics) => {
+                        use crate::ai::analysis::generate_business_insights;
+                        
+                        let insights = format!(
+                            "💡 **Советы для бизнеса: {}**\n\n{}",
+                            business_name,
+                            generate_business_insights(&metrics)
+                        );
+
+                        Some(insights)
+                    }
+                    Err(e) => {
+                        tracing::error!("❌ Failed to fetch metrics: {}", e);
+                        Some(format!(
+                            "❌ Не удалось получить метрики для '{}'.\n\
+                             Ошибка: {}",
+                            business_name, e
+                        ))
+                    }
+                }
+            }
+            Ok(None) => {
+                Some(format!(
+                    "❌ Бизнес '{}' не найден.\n\n\
+                     💡 Используйте 'покажи все бизнесы' для списка.",
+                    business_query
+                ))
+            }
+            Err(e) => {
+                tracing::error!("❌ Error: {}", e);
+                Some(format!("❌ Ошибка поиска: {}", e))
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -386,5 +462,17 @@ mod tests {
     fn test_compare_handler_priority() {
         let handler = CompareBusinessesHandler;
         assert_eq!(handler.priority(), 85);
+    }
+
+    #[test]
+    fn test_insights_handler_name() {
+        let handler = BusinessInsightsHandler;
+        assert_eq!(handler.name(), "businessinsights");
+    }
+
+    #[test]
+    fn test_insights_handler_priority() {
+        let handler = BusinessInsightsHandler;
+        assert_eq!(handler.priority(), 82);
     }
 }

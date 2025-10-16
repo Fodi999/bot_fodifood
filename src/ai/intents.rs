@@ -30,6 +30,7 @@ pub enum Intent {
     SalesAnalysis,
     AnalyzeBusiness,     // 📊 Анализ бизнеса по метрикам
     CompareBusinesses,   // 📊 Сравнение бизнесов
+    BusinessInsights,    // 💡 Советы по улучшению метрик
 
     // Доставка
     DeliveryInfo,
@@ -716,25 +717,57 @@ impl IntentClassifier {
         if let Some(score) = Self::match_keywords(
             &text_lower,
             &[
-                "сравни бизнес",
-                "сравнить бизнес",
-                "сравнение бизнес",
-                "compare business",
+                "сравни",
+                "сравнить",
+                "сравнение",
+                "compare",
                 "comparison",
                 "что лучше",
                 "какой выбрать",
-                "какой бизнес лучше",
+                "какой лучше",
                 "разница между",
-                "отличия бизнес",
-                "или",
                 "versus",
                 "vs",
             ],
         ) {
+            // Дополнительная проверка: должно быть упоминание бизнеса ИЛИ разделитель "и"/"or"
+            if text_lower.contains("бизнес") || text_lower.contains("business") 
+                || text_lower.contains(" и ") || text_lower.contains(" or ") 
+                || text_lower.contains(" vs ") {
+                candidates.push(IntentCandidate {
+                    intent: Intent::CompareBusinesses,
+                    priority: IntentPriority::High,
+                    score: score + 4,
+                });
+            }
+        }
+
+        // === Советы по улучшению бизнеса ===
+        if let Some(score) = Self::match_keywords(
+            &text_lower,
+            &[
+                "советы по бизнесу",
+                "как улучшить",
+                "рекомендации",
+                "что делать",
+                "как повысить roi",
+                "insights",
+                "advice",
+                "recommendations",
+                "improve business",
+                "increase roi",
+                "boost performance",
+                "падает roi",
+                "мало инвесторов",
+                "низкая цена",
+                "что не так",
+                "проблемы бизнеса",
+            ],
+        ) {
             candidates.push(IntentCandidate {
-                intent: Intent::CompareBusinesses,
+                intent: Intent::BusinessInsights,
                 priority: IntentPriority::High,
-                score: score + 4, // Высокий приоритет для сравнения
+                score: score + 4,
             });
         }
 
