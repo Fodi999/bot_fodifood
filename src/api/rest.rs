@@ -281,7 +281,7 @@ pub async fn get_admin_stats(
     }
 
     // Проверяем роль пользователя
-    if verify_response.role != Some(crate::models::user::UserRole::Admin) {
+    if verify_response.role.as_deref() != Some("admin") {
         tracing::warn!("❌ User is not admin: {:?}", verify_response.role);
         return Err((StatusCode::FORBIDDEN, "Admin access required".to_string()));
     }
@@ -324,7 +324,7 @@ pub async fn get_recent_orders(
     }
 
     // Проверяем роль пользователя
-    if verify_response.role != Some(crate::models::user::UserRole::Admin) {
+    if verify_response.role.as_deref() != Some("admin") {
         tracing::warn!("❌ User is not admin: {:?}", verify_response.role);
         return Err((StatusCode::FORBIDDEN, "Admin access required".to_string()));
     }
@@ -390,7 +390,7 @@ pub async fn get_admin_users(
     }
 
     // Проверяем роль пользователя
-    if verify_response.role != Some(crate::models::user::UserRole::Admin) {
+    if verify_response.role.as_deref() != Some("admin") {
         tracing::warn!("❌ User is not admin: {:?}", verify_response.role);
         return Err((StatusCode::FORBIDDEN, "Admin access required".to_string()));
     }
@@ -439,7 +439,7 @@ pub async fn get_admin_orders(
     }
 
     // Проверяем роль пользователя
-    if verify_response.role != Some(crate::models::user::UserRole::Admin) {
+    if verify_response.role.as_deref() != Some("admin") {
         tracing::warn!("❌ User is not admin: {:?}", verify_response.role);
         return Err((StatusCode::FORBIDDEN, "Admin access required".to_string()));
     }

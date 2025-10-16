@@ -9,7 +9,6 @@ use uuid::Uuid;
 use crate::{
     models::{
         message::{IncomingMessage, OutgoingMessage},
-        user::UserRole,
     },
     state::{AppState, ClientConnection},
 };
@@ -46,7 +45,7 @@ async fn handle_socket(socket: WebSocket, state: AppState, params: WsParams) {
     let connection_id = Uuid::new_v4().to_string();
     let mut authenticated = false;
     let mut user_id = String::new();
-    let mut user_role = UserRole::Client;
+    let mut user_role = String::from("client");
 
     tracing::info!("New WebSocket connection: {}", connection_id);
 
@@ -58,7 +57,7 @@ async fn handle_socket(socket: WebSocket, state: AppState, params: WsParams) {
             Ok(response) if response.valid => {
                 authenticated = true;
                 user_id = response.user_id.clone().unwrap_or_default();
-                user_role = response.role.clone().unwrap_or(UserRole::Client);
+                user_role = response.role.clone().unwrap_or_else(|| String::from("client"));
 
                 // Register connection
                 state.connections.insert(
@@ -138,7 +137,7 @@ async fn handle_socket(socket: WebSocket, state: AppState, params: WsParams) {
                             Ok(response) if response.valid => {
                                 authenticated = true;
                                 user_id = response.user_id.clone().unwrap_or_default();
-                                user_role = response.role.clone().unwrap_or(UserRole::Client);
+                                user_role = response.role.clone().unwrap_or_else(|| String::from("client"));
 
                                 // Register connection
                                 state.connections.insert(
@@ -197,7 +196,7 @@ async fn handle_socket(socket: WebSocket, state: AppState, params: WsParams) {
                         tracing::info!("✅ Handling guest chat message: {}", text);
                         // Используем гостевой ID
                         let guest_id = format!("guest_{}", connection_id);
-                        handle_chat_message(&state, &guest_id, &UserRole::Client, &text, &tx).await;
+                        handle_chat_message(&state, &guest_id, "client", &text, &tx).await;
                         tracing::info!("🟢 Finished processing guest message");
                     }
 
@@ -252,7 +251,7 @@ async fn handle_socket(socket: WebSocket, state: AppState, params: WsParams) {
 async fn handle_chat_message(
     state: &AppState,
     user_id: &str,
-    _role: &UserRole,
+    _role: &str,
     text: &str,
     tx: &mpsc::UnboundedSender<String>,
 ) {
@@ -406,7 +405,7 @@ async fn handle_chat_message(
 async fn handle_command(
     state: &AppState,
     user_id: &str,
-    role: &UserRole,
+    role: &str,
     action: &str,
     params: Option<serde_json::Value>,
     tx: &mpsc::UnboundedSender<String>,
@@ -432,7 +431,7 @@ async fn handle_command(
             }
         },
 
-        "get_orders" if role.is_staff() => match state.backend.get_orders().await {
+        "get_orders" if role == "admin" || role == "manager" => match state.backend.get_orders().await {
             Ok(orders) => {
                 let response = OutgoingMessage::CommandResponse {
                     action: action.to_string(),

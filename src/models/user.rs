@@ -34,7 +34,7 @@ pub struct VerifyTokenRequest {
 pub struct VerifyTokenResponse {
     pub valid: bool,
     pub user_id: Option<String>,
-    pub role: Option<UserRole>,
+    pub role: Option<String>,
     pub name: Option<String>,
     pub email: Option<String>,
 }

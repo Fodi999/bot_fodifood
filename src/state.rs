@@ -5,7 +5,6 @@ use tokio::sync::mpsc;
 use crate::ai::AIEngine;
 use crate::api::go_backend::GoBackendClient;
 use crate::config::Config;
-use crate::models::user::UserRole;
 use crate::metrics::MetricsCollector; // 📊 Metrics
 use crate::handlers::InsightBroadcaster; // 📡 WebSocket Insights
 
@@ -29,7 +28,7 @@ pub struct AppState {
 pub struct ClientConnection {
     #[allow(dead_code)]
     pub user_id: String,
-    pub role: UserRole,
+    pub role: String,
     pub tx: mpsc::UnboundedSender<String>,
 }
 
@@ -54,7 +53,7 @@ impl AppState {
     /// Broadcast message to all admins
     pub fn broadcast_to_admins(&self, message: &str) {
         for entry in self.connections.iter() {
-            if matches!(entry.value().role, UserRole::Admin | UserRole::Manager) {
+            if entry.value().role == "admin" || entry.value().role == "manager" {
                 let _ = entry.value().tx.send(message.to_string());
             }
         }
@@ -69,7 +68,7 @@ impl AppState {
 
     /// Get active connections count by role
     #[allow(dead_code)]
-    pub fn get_connections_by_role(&self, role: UserRole) -> usize {
+    pub fn get_connections_by_role(&self, role: &str) -> usize {
         self.connections
             .iter()
             .filter(|entry| entry.value().role == role)

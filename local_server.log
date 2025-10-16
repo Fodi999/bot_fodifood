@@ -1,0 +1,76 @@
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.08s
+     Running `target/debug/local`
+[2m2025-10-15T23:21:35.226811Z[0m [32m INFO[0m [2mlocal[0m[2m:[0m 🚀 Starting FodiFood Bot (Local Mode)...
+[2m2025-10-15T23:21:35.227621Z[0m [32m INFO[0m [2mlocal[0m[2m:[0m ✅ Configuration loaded
+[2m2025-10-15T23:21:35.227659Z[0m [32m INFO[0m [2mlocal[0m[2m:[0m 📡 Go Backend URL: http://localhost:8080/api
+[2m2025-10-15T23:21:35.236341Z[0m [32m INFO[0m [2mai[0m[2m:[0m � Registering all intent handlers...
+[2m2025-10-15T23:21:35.236384Z[0m [32m INFO[0m [2mfodifood_bot::ai::intent_handler[0m[2m:[0m 📝 Registering intent handler: showmenu
+[2m2025-10-15T23:21:35.236482Z[0m [32m INFO[0m [2mfodifood_bot::ai::intent_handler[0m[2m:[0m 📝 Registering intent handler: searchmenu
+[2m2025-10-15T23:21:35.236574Z[0m [32m INFO[0m [2mfodifood_bot::ai::intent_handler[0m[2m:[0m 📝 Registering intent handler: searchbyingredient
+[2m2025-10-15T23:21:35.236583Z[0m [32m INFO[0m [2mfodifood_bot::ai::intent_handler[0m[2m:[0m 📝 Registering intent handler: smalltalk
+[2m2025-10-15T23:21:35.236589Z[0m [32m INFO[0m [2mfodifood_bot::ai::intent_handler[0m[2m:[0m 📝 Registering intent handler: help
+[2m2025-10-15T23:21:35.236597Z[0m [32m INFO[0m [2mfodifood_bot::ai::intent_handler[0m[2m:[0m 📝 Registering intent handler: deliveryinfo
+[2m2025-10-15T23:21:35.236624Z[0m [32m INFO[0m [2mfodifood_bot::ai::intent_handler[0m[2m:[0m 📝 Registering intent handler: createorder
+[2m2025-10-15T23:21:35.236653Z[0m [32m INFO[0m [2mfodifood_bot::ai::intent_handler[0m[2m:[0m 📝 Registering intent handler: orderstatus
+[2m2025-10-15T23:21:35.236660Z[0m [32m INFO[0m [2mfodifood_bot::ai::intent_handler[0m[2m:[0m 📝 Registering intent handler: cancelorder
+[2m2025-10-15T23:21:35.236667Z[0m [32m INFO[0m [2mfodifood_bot::ai::intent_handler[0m[2m:[0m 📝 Registering intent handler: checkingredients
+[2m2025-10-15T23:21:35.236674Z[0m [32m INFO[0m [2mfodifood_bot::ai::intent_handler[0m[2m:[0m 📝 Registering intent handler: stockstatus
+[2m2025-10-15T23:21:35.236680Z[0m [32m INFO[0m [2mfodifood_bot::ai::intent_handler[0m[2m:[0m 📝 Registering intent handler: getstatistics
+[2m2025-10-15T23:21:35.236686Z[0m [32m INFO[0m [2mfodifood_bot::ai::intent_handler[0m[2m:[0m 📝 Registering intent handler: salesanalysis
+[2m2025-10-15T23:21:35.236714Z[0m [32m INFO[0m [2mfodifood_bot::ai::intent_handler[0m[2m:[0m 📝 Registering intent handler: analyzebusiness
+[2m2025-10-15T23:21:35.236744Z[0m [32m INFO[0m [2mfodifood_bot::ai::intent_handler[0m[2m:[0m 📝 Registering intent handler: recommendations
+[2m2025-10-15T23:21:35.236751Z[0m [32m INFO[0m [2mai[0m[2m:[0m ✅ Registered 15 handlers
+[2m2025-10-15T23:21:35.236865Z[0m [32m INFO[0m [2mai[0m[2m:[0m 📝 Available handlers: ["help", "createorder", "searchmenu", "orderstatus", "showmenu", "cancelorder", "getstatistics", "searchbyingredient", "checkingredients", "salesanalysis", "deliveryinfo", "stockstatus", "analyzebusiness", "recommendations", "smalltalk"]
+[2m2025-10-15T23:21:35.236971Z[0m [32m INFO[0m [2mfodifood_bot::ai[0m[2m:[0m 🚀 AIEngine initialized with 15 intent handlers
+[2m2025-10-15T23:21:35.237358Z[0m [32m INFO[0m [2mfodifood_bot::handlers::insight_broadcaster[0m[2m:[0m 📡 Creating AI Insight Broadcaster
+[2m2025-10-15T23:21:35.237389Z[0m [32m INFO[0m [2mlocal[0m[2m:[0m 🎯 Backend Orchestrator enabled
+[2m2025-10-15T23:21:35.237654Z[0m [32m INFO[0m [2mlocal[0m[2m:[0m 🔄 Auto-management enabled - will monitor and restart backend
+[2m2025-10-15T23:21:35.237854Z[0m [32m INFO[0m [2mlocal[0m[2m:[0m ✅ Backend Orchestrator initialized
+[2m2025-10-15T23:21:35.237862Z[0m [32m INFO[0m [2mlocal[0m[2m:[0m ✅ Application state initialized
+[2m2025-10-15T23:21:35.237872Z[0m [32m INFO[0m [2mlocal[0m[2m:[0m 🧠 AI Engine ready with 15 intent handlers
+[2m2025-10-15T23:21:35.238044Z[0m [32m INFO[0m [2mlocal[0m[2m:[0m 📊 Metrics collector initialized
+[2m2025-10-15T23:21:35.239888Z[0m [32m INFO[0m [2mlocal[0m[2m:[0m 🎯 Server listening on http://127.0.0.1:8000
+[2m2025-10-15T23:21:35.239922Z[0m [32m INFO[0m [2mlocal[0m[2m:[0m 
+[2m2025-10-15T23:21:35.239928Z[0m [32m INFO[0m [2mlocal[0m[2m:[0m 📊 Metrics endpoints:
+[2m2025-10-15T23:21:35.239933Z[0m [32m INFO[0m [2mlocal[0m[2m:[0m    • Prometheus: http://127.0.0.1:8000/metrics
+[2m2025-10-15T23:21:35.239940Z[0m [32m INFO[0m [2mlocal[0m[2m:[0m    • Dashboard:  http://127.0.0.1:8000/admin/metrics
+[2m2025-10-15T23:21:35.239946Z[0m [32m INFO[0m [2mlocal[0m[2m:[0m    • Intents:    http://127.0.0.1:8000/admin/metrics/intents
+[2m2025-10-15T23:21:35.239953Z[0m [32m INFO[0m [2mlocal[0m[2m:[0m    • Stats:      http://127.0.0.1:8000/admin/metrics/stats
+[2m2025-10-15T23:21:35.239960Z[0m [32m INFO[0m [2mlocal[0m[2m:[0m 
+[2m2025-10-15T23:21:35.239964Z[0m [32m INFO[0m [2mlocal[0m[2m:[0m 💬 Chat API:      http://127.0.0.1:8000/api/v1/chat
+[2m2025-10-15T23:21:35.239971Z[0m [32m INFO[0m [2mlocal[0m[2m:[0m 🔌 WebSocket:     ws://127.0.0.1:8000/ws
+[2m2025-10-15T23:21:35.239977Z[0m [32m INFO[0m [2mlocal[0m[2m:[0m 
+[2m2025-10-15T23:21:57.540712Z[0m [32m INFO[0m [2mfodifood_bot::api::rest[0m[2m:[0m 💬 Chat request from user test: проанализируй бизнес
+[2m2025-10-15T23:21:57.540847Z[0m [32m INFO[0m [2mfodifood_bot::api::rest[0m[2m:[0m 🎯 Detected intent: AnalyzeBusiness
+[2m2025-10-15T23:21:57.540874Z[0m [32m INFO[0m [2mai[0m[2m:[0m 🧠 Cognitive: mood=neutral, emotion=None
+[2m2025-10-15T23:21:57.540910Z[0m [32m INFO[0m [2mfodifood_bot::ai::memory[0m[2m:[0m ❤️ Сохранено настроение test = neutral, эмоция: None
+[2m2025-10-15T23:21:57.540978Z[0m [32m INFO[0m [2mai[0m[2m:[0m 🎯 Classified intent: analyzebusiness for message: проанализируй бизнес
+[2m2025-10-15T23:21:57.541007Z[0m [32m INFO[0m [2mai[0m[2m:[0m ✅ Found handler: analyzebusiness for intent: analyzebusiness
+[2m2025-10-15T23:21:57.541025Z[0m [32m INFO[0m [2mfodifood_bot::ai::modules::business[0m[2m:[0m 📊 Handling business analysis request for user: test
+[2m2025-10-15T23:21:57.541230Z[0m [32m INFO[0m [2mfodifood_bot::services::go_client[0m[2m:[0m 🏢 Fetching businesses list
+[2m2025-10-15T23:21:58.265387Z[0m [32m INFO[0m [2mfodifood_bot::services::go_client[0m[2m:[0m ✅ Fetched 2 businesses
+[2m2025-10-15T23:21:58.265524Z[0m [32m INFO[0m [2mai[0m[2m:[0m ⏱️  Intent 'analyzebusiness' handled in 724.536042ms
+[2m2025-10-15T23:22:33.705227Z[0m [32m INFO[0m [2mfodifood_bot::api::rest[0m[2m:[0m 💬 Chat request from user test: проанализируй бизнес
+[2m2025-10-15T23:22:33.705361Z[0m [32m INFO[0m [2mfodifood_bot::api::rest[0m[2m:[0m 🎯 Detected intent: AnalyzeBusiness
+[2m2025-10-15T23:22:33.705379Z[0m [32m INFO[0m [2mai[0m[2m:[0m 🧠 Cognitive: mood=neutral, emotion=None
+[2m2025-10-15T23:22:33.705413Z[0m [32m INFO[0m [2mfodifood_bot::ai::memory[0m[2m:[0m ❤️ Сохранено настроение test = neutral, эмоция: None
+[2m2025-10-15T23:22:33.705580Z[0m [32m INFO[0m [2mai[0m[2m:[0m 🎯 Classified intent: analyzebusiness for message: проанализируй бизнес
+[2m2025-10-15T23:22:33.705605Z[0m [32m INFO[0m [2mai[0m[2m:[0m ✅ Found handler: analyzebusiness for intent: analyzebusiness
+[2m2025-10-15T23:22:33.705613Z[0m [32m INFO[0m [2mfodifood_bot::ai::modules::business[0m[2m:[0m 📊 Handling business analysis request for user: test
+[2m2025-10-15T23:22:33.705764Z[0m [32m INFO[0m [2mfodifood_bot::services::go_client[0m[2m:[0m 🏢 Fetching businesses list
+[2m2025-10-15T23:22:33.768894Z[0m [32m INFO[0m [2mfodifood_bot::services::go_client[0m[2m:[0m ✅ Fetched 2 businesses
+[2m2025-10-15T23:22:33.768926Z[0m [32m INFO[0m [2mai[0m[2m:[0m ⏱️  Intent 'analyzebusiness' handled in 63.324917ms
+[2m2025-10-15T23:22:57.757193Z[0m [32m INFO[0m [2mfodifood_bot::api::rest[0m[2m:[0m 💬 Chat request from user test: проанализируй бизнес Tech Startup
+[2m2025-10-15T23:22:57.757273Z[0m [32m INFO[0m [2mfodifood_bot::api::rest[0m[2m:[0m 🎯 Detected intent: AnalyzeBusiness
+[2m2025-10-15T23:22:57.757288Z[0m [32m INFO[0m [2mai[0m[2m:[0m 🧠 Cognitive: mood=neutral, emotion=None
+[2m2025-10-15T23:22:57.757301Z[0m [32m INFO[0m [2mfodifood_bot::ai::memory[0m[2m:[0m ❤️ Сохранено настроение test = neutral, эмоция: None
+[2m2025-10-15T23:22:57.757367Z[0m [32m INFO[0m [2mai[0m[2m:[0m 🎯 Classified intent: analyzebusiness for message: проанализируй бизнес Tech Startup
+[2m2025-10-15T23:22:57.757451Z[0m [32m INFO[0m [2mai[0m[2m:[0m ✅ Found handler: analyzebusiness for intent: analyzebusiness
+[2m2025-10-15T23:22:57.757461Z[0m [32m INFO[0m [2mfodifood_bot::ai::modules::business[0m[2m:[0m 📊 Handling business analysis request for user: test
+[2m2025-10-15T23:22:57.757618Z[0m [32m INFO[0m [2mfodifood_bot::services::go_client[0m[2m:[0m 🏢 Fetching businesses list
+[2m2025-10-15T23:22:57.820011Z[0m [32m INFO[0m [2mfodifood_bot::services::go_client[0m[2m:[0m ✅ Fetched 2 businesses
+[2m2025-10-15T23:22:57.820056Z[0m [32m INFO[0m [2mfodifood_bot::ai::modules::business[0m[2m:[0m 🔍 Found business: Tech Startup (92b5ba68-0daa-4396-866a-a5648a87f372)
+[2m2025-10-15T23:22:57.820292Z[0m [32m INFO[0m [2mfodifood_bot::services::go_client[0m[2m:[0m 📊 Fetching metrics for business: 92b5ba68-0daa-4396-866a-a5648a87f372
+[2m2025-10-15T23:22:58.416331Z[0m [32m INFO[0m [2mfodifood_bot::services::go_client[0m[2m:[0m ✅ Metrics fetched successfully
+[2m2025-10-15T23:22:58.416454Z[0m [32m INFO[0m [2mfodifood_bot::ai::modules::business[0m[2m:[0m ✅ Metrics fetched for: Tech Startup
+[2m2025-10-15T23:22:58.416528Z[0m [32m INFO[0m [2mai[0m[2m:[0m ⏱️  Intent 'analyzebusiness' handled in 659.089333ms

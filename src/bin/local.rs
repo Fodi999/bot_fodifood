@@ -74,6 +74,8 @@ async fn main() {
         // 🌐 REST API v1
         .route("/api/v1/health", get(api::rest::health_check))
         .route("/api/v1/products", get(api::rest::get_products))
+        .merge(api::businesses::routes()) // 💼 Business proxy
+        .merge(api::user::routes()) // 👤 User management
         
         // 🔐 Authentication
         .route("/api/v1/auth/login", post(api::rest::login_handler))
