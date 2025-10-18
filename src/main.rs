@@ -13,15 +13,30 @@ use shuttle_axum::axum::{
     Router,
 };
 use shuttle_axum::ShuttleAxum;
+use shuttle_runtime::SecretStore;
 use tower_http::cors::CorsLayer;
 
 use crate::config::Config;
 use crate::state::AppState;
 
 #[shuttle_runtime::main]
-async fn main() -> ShuttleAxum {
+async fn main(
+    #[shuttle_runtime::Secrets] secrets: SecretStore,
+) -> ShuttleAxum {
     // Shuttle автоматически инициализирует tracing
     tracing::info!("🚀 FodiFood Intelligent Bot — запуск...");
+
+    // Set environment variables from Shuttle Secrets
+    if let Some(go_backend_url) = secrets.get("GO_BACKEND_URL") {
+        std::env::set_var("GO_BACKEND_URL", go_backend_url);
+        tracing::info!("✅ GO_BACKEND_URL loaded from Shuttle Secrets");
+    }
+    if let Some(jwt_secret) = secrets.get("JWT_SECRET") {
+        std::env::set_var("JWT_SECRET", jwt_secret);
+    }
+    if let Some(openai_key) = secrets.get("OPENAI_API_KEY") {
+        std::env::set_var("OPENAI_API_KEY", openai_key);
+    }
 
     // === Конфигурация ===
     let config = Config::from_env();
