@@ -23,7 +23,7 @@ impl Config {
                 String::new()
             }),
             go_backend_url: env::var("GO_BACKEND_URL")
-                .unwrap_or_else(|_| "http://localhost:8080/api".to_string()),
+                .expect("GO_BACKEND_URL must be set in environment or Secrets.toml"),
             jwt_secret: env::var("JWT_SECRET")
                 .unwrap_or_else(|_| "default-secret-change-in-production".to_string()),
             orchestrator_enabled: env::var("ORCHESTRATOR_ENABLED")
