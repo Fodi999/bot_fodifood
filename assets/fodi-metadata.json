@@ -1,0 +1,44 @@
+{
+  "name": "FODI Token",
+  "symbol": "FODI",
+  "description": "Official utility token of the FODI Food ecosystem. Used for rewards, staking, governance, and premium features.",
+  "image": "https://raw.githubusercontent.com/Fodi999/bot_fodifood/main/assets/fodi-logo.png",
+  "external_url": "https://fodifood.com",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Utility Token"
+    },
+    {
+      "trait_type": "Network",
+      "value": "Solana"
+    },
+    {
+      "trait_type": "Standard",
+      "value": "SPL Token"
+    },
+    {
+      "trait_type": "Use Case",
+      "value": "Governance & Rewards"
+    },
+    {
+      "trait_type": "Total Supply",
+      "value": "100,000,000"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "https://raw.githubusercontent.com/Fodi999/bot_fodifood/main/assets/fodi-logo.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "fungible",
+    "creators": [
+      {
+        "address": "5tKU52gmhJMe1XBfPHrkVibSF2LjJoZWKqdt93d2juZ4",
+        "share": 100
+      }
+    ]
+  }
+}
