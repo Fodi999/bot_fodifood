@@ -309,10 +309,7 @@ mod tests {
         let nft = BusinessNft {
             mint: "mint123".to_string(),
             name: "Sushi Bar".to_string(),
-            symbol: "BZNFT".to_string(),
-            uri: "https://example.com/metadata.json".to_string(),
             owner: "owner123".to_string(),
-            business_id: "biz123".to_string(),
             attributes: BusinessAttributes {
                 business_type: "restaurant".to_string(),
                 cuisine: "sushi".to_string(),

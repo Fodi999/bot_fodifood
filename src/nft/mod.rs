@@ -1,15 +1,17 @@
 //! 🧩 NFT Module for Business-as-NFT functionality
 //!
 //! Mint businesses as NFTs, update metadata, and handle marketplace sales
+//! Works without Anchor, using direct Solana RPC
 
 pub mod api;
-pub mod mint;
-pub mod metadata;
 pub mod marketplace;
+pub mod metadata;
+pub mod mint;
+pub mod onchain;
 
-pub use mint::NftMinter;
-pub use metadata::MetadataUpdater;
-pub use marketplace::NftMarketplace;
+pub use api::*;
+pub use marketplace::*;
+pub use mint::*;
 
 use serde::{Deserialize, Serialize};
 

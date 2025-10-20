@@ -256,6 +256,100 @@ async fn update_nft_metadata(
 }
 
 // ============================================================================
+// Direct On-Chain NFT Minting (New!)
+// ============================================================================
+
+#[derive(Debug, Deserialize)]
+pub struct MintNftRequest {
+    pub name: String,
+    pub uri: String,
+    pub roi: u16, // ROI in basis points (100 = 1%)
+}
+
+/// Mint NFT directly on-chain using Solana RPC
+/// POST /api/nft/mint/onchain
+async fn mint_nft_onchain(
+    Json(req): Json<MintNftRequest>,
+) -> Result<Json<Value>, (StatusCode, String)> {
+    use crate::nft::onchain::send_mint_instruction;
+    
+    tracing::info!("🪙 Minting NFT on-chain: {}, ROI: {}%", req.name, req.roi as f64 / 100.0);
+    
+    // Call our improved onchain module
+    let signature = send_mint_instruction(&req.name, &req.uri, req.roi)
+        .await
+        .map_err(|e| {
+            tracing::error!("❌ Failed to mint NFT: {}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to mint NFT: {}", e))
+        })?;
+    
+    tracing::info!("✅ NFT minted! Signature: {}", signature);
+    
+    Ok(Json(json!({
+        "status": "success",
+        "tx": signature,
+        "explorer": format!("https://explorer.solana.com/tx/{}?cluster=devnet", signature),
+        "nft": {
+            "name": req.name,
+            "uri": req.uri,
+            "roi_percent": req.roi as f64 / 100.0
+        }
+    })))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CheckNftRequest {
+    pub wallet: String,
+    pub nft_name: String,
+}
+
+/// Check if user has specific NFT
+/// POST /api/nft/check
+async fn check_nft_ownership(
+    Json(req): Json<CheckNftRequest>,
+) -> Result<Json<Value>, (StatusCode, String)> {
+    use crate::nft::onchain::check_user_nft;
+    use solana_sdk::pubkey::Pubkey;
+    use std::str::FromStr;
+    
+    let user_pubkey = Pubkey::from_str(&req.wallet)
+        .map_err(|e| (StatusCode::BAD_REQUEST, format!("Invalid wallet address: {}", e)))?;
+    
+    let has_nft = check_user_nft(&user_pubkey, &req.nft_name)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to check NFT: {}", e)))?;
+    
+    Ok(Json(json!({
+        "wallet": req.wallet,
+        "nft_name": req.nft_name,
+        "has_nft": has_nft,
+        "status": if has_nft { "found" } else { "not_found" }
+    })))
+}
+
+/// Get business statistics from on-chain
+/// GET /api/nft/stats/{business_pubkey}
+async fn get_business_stats_onchain(
+    Path(business_pubkey): Path<String>,
+) -> Result<Json<Value>, (StatusCode, String)> {
+    use crate::nft::onchain::get_business_stats;
+    use solana_sdk::pubkey::Pubkey;
+    use std::str::FromStr;
+    
+    let pubkey = Pubkey::from_str(&business_pubkey)
+        .map_err(|e| (StatusCode::BAD_REQUEST, format!("Invalid pubkey: {}", e)))?;
+    
+    let stats = get_business_stats(&pubkey)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Failed to get stats: {}", e)))?;
+    
+    Ok(Json(json!({
+        "business": business_pubkey,
+        "stats": stats
+    })))
+}
+
+// ============================================================================
 // Router
 // ============================================================================
 
@@ -283,6 +377,9 @@ pub fn routes(wallet_db: Arc<sled::Db>) -> Router {
     Router::new()
         .route("/health", get(health_check))
         .route("/mint", post(mint_business_nft))
+        .route("/mint/onchain", post(mint_nft_onchain))      // NEW: Direct on-chain minting
+        .route("/check", post(check_nft_ownership))          // NEW: Check NFT ownership
+        .route("/stats/{business_pubkey}", get(get_business_stats_onchain))  // NEW: On-chain stats (Axum 0.8 syntax)
         .route("/update", post(update_nft_metadata))
         .route("/listings", get(get_listings))
         .route("/listings", post(create_listing))
@@ -297,7 +394,8 @@ mod tests {
 
     #[test]
     fn test_routes_creation() {
-        let router = routes();
+        let db = Arc::new(sled::Config::new().temporary(true).open().unwrap());
+        let router = routes(db);
         // Basic test to ensure routes are created
         assert!(true);
     }

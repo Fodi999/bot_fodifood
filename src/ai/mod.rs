@@ -1,6 +1,10 @@
 pub mod core; // 🧠 Core AI infrastructure (Groq API)
 pub mod control; // 🎛️ AI Control Layer (security, monitoring, access control)
 pub mod agent; // 🤖 Autonomous AI Agent (Copilot-level decision making)
+pub mod business_analyzer; // 💼 Business Brain (market analysis & strategic recommendations)
+pub mod investment_analyzer; // 💰 AI CFO (NPV, IRR, ROI, investment analysis)
+pub mod airdrop_agent; // 🎁 AI Airdrop Agent (token distribution & marketing campaigns)
+pub mod social_tasks; // 🌐 Social Tasks (viral marketing missions & LinkHub)
 pub mod admin_assistant; // 🔧 Admin AI assistant
 pub mod analysis; // 💡 AI-powered business analysis
 pub mod intent_handler; // 🎯 Intent handler system

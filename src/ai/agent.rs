@@ -17,6 +17,7 @@
 use crate::ai::thinker::Thinker;
 use crate::ai::intents::{Intent, IntentClassifier};
 use crate::ai::control;
+use crate::ai::business_analyzer::BusinessBrain;
 use chrono::Utc;
 use anyhow::Result;
 
@@ -150,9 +151,43 @@ pub async fn run_agent_cycle(input: &str) -> Result<String> {
             "🚧 Эта функция скоро будет доступна! А пока могу показать меню или дать рекомендации.".to_string()
         }
         
-        Intent::StockStatus | Intent::GetStatistics | Intent::SalesAnalysis | 
-        Intent::AnalyzeBusiness | Intent::CompareBusinesses | Intent::BusinessInsights => {
-            println!("📊 Strategy: Business intelligence mode");
+        Intent::AnalyzeBusiness => {
+            println!("💼 Strategy: Business Brain analysis mode");
+            // Extract industry and region from input
+            let industry = if input.to_lowercase().contains("ресторан") || input.to_lowercase().contains("restaurant") {
+                "restaurant"
+            } else if input.to_lowercase().contains("фуд") || input.to_lowercase().contains("food") {
+                "food delivery"
+            } else {
+                "food business"
+            };
+            
+            let region = if input.to_lowercase().contains("москв") || input.to_lowercase().contains("moscow") {
+                "Moscow"
+            } else if input.to_lowercase().contains("петербург") || input.to_lowercase().contains("petersburg") {
+                "St. Petersburg"
+            } else {
+                "Russia"
+            };
+            
+            BusinessBrain::analyze_opportunity(industry, region).await?
+        }
+        
+        Intent::CompareBusinesses => {
+            println!("🔍 Strategy: Competitor analysis mode");
+            // Simple competitor analysis
+            let competitors = vec!["Delivery Club", "Yandex.Eats", "Uber Eats"];
+            BusinessBrain::analyze_competitors("food delivery", competitors).await?
+        }
+        
+        Intent::BusinessInsights => {
+            println!("� Strategy: Business insights mode");
+            // Growth strategy recommendations
+            BusinessBrain::growth_strategy("growing", 50000.0, 1000).await?
+        }
+        
+        Intent::StockStatus | Intent::GetStatistics | Intent::SalesAnalysis => {
+            println!("📊 Strategy: Business metrics mode");
             control::answer_customer_query(&format!("Analyze business data: {}", input)).await?
         }
         

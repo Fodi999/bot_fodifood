@@ -1,15 +1,5 @@
-mod ai;
-mod api;
-mod bank; // 💰 Token bank & tokenomics
-mod config;
-mod handlers;
-mod metrics;
-mod models;
-mod nft; // 🧩 NFT module
-mod orchestration; // 🎯 Backend orchestration
-mod services; // 🌐 External service clients
-mod solana; // 🪙 Solana blockchain integration
-mod state;
+use fodifood_bot::{api, config, handlers, state};
+// Note: bank, nft, wallet, solana modules available in local mode (src/bin/local.rs)
 
 use shuttle_axum::axum::{
     routing::{get, post},
@@ -19,8 +9,8 @@ use shuttle_axum::ShuttleAxum;
 use shuttle_runtime::SecretStore;
 use tower_http::cors::CorsLayer;
 
-use crate::config::Config;
-use crate::state::AppState;
+use config::Config;
+use state::AppState;
 
 #[shuttle_runtime::main]
 async fn main(
@@ -63,13 +53,8 @@ async fn main(
         .route("/api/v1/user/profile", get(api::rest::get_user_profile))
         // 💼 Business Management - merged routes from businesses module
         .merge(api::businesses::routes())
-        // 🪙 Solana Blockchain API
-        .merge(api::solana::routes())
-        // � Token Bank (v2.4)
-        .nest("/api/bank", bank::api::routes())
-        // 🧩 NFT Marketplace (v2.4) - coming soon
-        // .nest("/api/nft", nft::api::routes())
-        // �👨‍💼 Admin Endpoints
+        // Note: Solana API available in local mode only
+        // 👨‍💼 Admin Endpoints
         .route("/api/v1/admin/stats", get(api::rest::get_admin_stats))
         .route(
             "/api/v1/admin/orders/recent",
@@ -108,8 +93,7 @@ async fn main(
     tracing::info!("🤖 FodiFood Bot API запущен и готов!");
     tracing::info!("📡 REST API v1 доступен по адресу /api/v1/*");
     tracing::info!("👨‍💼 Admin endpoints: /api/v1/admin/*");
-    tracing::info!("💰 Bank API: /api/bank/*");
-    // tracing::info!("🧩 NFT API: /api/nft/*");
+    // Note: Bank & NFT APIs available in local mode only (src/bin/local.rs)
 
     Ok(app.into())
 }

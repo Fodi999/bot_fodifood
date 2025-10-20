@@ -8,7 +8,7 @@ use axum::{
 use serde_json::{json, Value};
 use solana_sdk::signature::Signer;
 
-use crate::solana::{mint_tokens, transfer_tokens, get_balance, create_fodi_token_with_client};
+use crate::solana::{mint_tokens, transfer_tokens, get_balance, create_fodi_token_with_client, transfer_spl_tokens};
 use crate::solana::models::{MintRequest, TransferRequest, BalanceRequest, TokenResponse, StakeRequest};
 use crate::state::AppState;
 
@@ -150,7 +150,7 @@ async fn transfer_handler(
                 }
             };
 
-            match crate::solana::token::transfer_spl_tokens(&solana.rpc, &mint_pubkey, solana.payer.as_ref(), &to, req.amount) {
+            match crate::solana::transfer_spl_tokens(&solana.rpc, &mint_pubkey, solana.payer.as_ref(), &to, req.amount) {
                 Ok(sig) => {
                     tracing::info!("✅ Transferred {} FODI tokens from treasury to {}", 
                         req.amount, req.to);
