@@ -6,6 +6,7 @@ mod metrics;
 mod models;
 mod orchestration; // 🎯 Backend orchestration
 mod services; // 🌐 External service clients
+mod solana; // 🪙 Solana blockchain integration
 mod state;
 
 use shuttle_axum::axum::{
@@ -58,9 +59,11 @@ async fn main(
         .route("/api/v1/auth/register", post(api::rest::register_handler))
         // 👤 User Profile
         .route("/api/v1/user/profile", get(api::rest::get_user_profile))
-        // � Business Management - merged routes from businesses module
+        // 💼 Business Management - merged routes from businesses module
         .merge(api::businesses::routes())
-        // �👨‍💼 Admin Endpoints
+        // 🪙 Solana Blockchain API
+        .merge(api::solana::routes())
+        // 👨‍💼 Admin Endpoints
         .route("/api/v1/admin/stats", get(api::rest::get_admin_stats))
         .route(
             "/api/v1/admin/orders/recent",

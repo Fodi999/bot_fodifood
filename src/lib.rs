@@ -6,5 +6,10 @@ pub mod api;
 pub mod handlers;
 pub mod models;
 pub mod orchestration; // 🎯 Backend orchestration
+pub mod solana; // 🪙 Solana blockchain integration
 pub mod state;
 pub mod metrics;
+
+// 🧪 Test modules
+#[cfg(test)]
+mod tests;

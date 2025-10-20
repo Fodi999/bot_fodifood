@@ -5,6 +5,8 @@ Cargo.lock
 
 # Environment
 .env
+.env.*
+!.env.example
 
 # IDE
 .idea
@@ -14,3 +16,29 @@ Cargo.lock
 
 # OS
 .DS_Store
+.shuttle*
+Secrets*.toml
+
+# Logs
+*.log
+**/*.log
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+
+# Solana keypairs (IMPORTANT: Never commit private keys!)
+*.json
+!assets/*.json
+!package.json
+!tsconfig.json
+tests/fixtures/*.json
+tests/fixtures/*-keypair.json
+*-keypair.json
+wallet*.json
+
+# Old documentation
+*_OLD.md
+*_BACKUP.*

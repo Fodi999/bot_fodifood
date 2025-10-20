@@ -7,6 +7,7 @@ use crate::api::go_backend::GoBackendClient;
 use crate::config::Config;
 use crate::metrics::MetricsCollector; // 📊 Metrics
 use crate::handlers::InsightBroadcaster; // 📡 WebSocket Insights
+use crate::solana::SolanaClient; // 🪙 Solana blockchain
 
 // Import orchestrator
 use crate::orchestration::BackendOrchestrator;
@@ -23,6 +24,7 @@ pub struct AppState {
     pub metrics: Arc<MetricsCollector>, // 📊 Metrics collector
     pub insight_broadcaster: InsightBroadcaster, // 📡 AI Insight broadcaster
     pub backend_orchestrator: Option<Arc<BackendOrchestrator>>, // 🎯 Backend lifecycle manager
+    pub solana: Option<SolanaClient>, // 🪙 Solana blockchain (optional for graceful degradation)
 }
 
 pub struct ClientConnection {
@@ -47,7 +49,14 @@ impl AppState {
             metrics, // 📊 Добавляем metrics
             insight_broadcaster, // 📡 Добавляем insight broadcaster
             backend_orchestrator: None, // 🎯 Оркестратор добавляется опционально
+            solana: None, // 🪙 Solana будет добавлен через with_solana()
         }
+    }
+
+    /// 🪙 Add Solana blockchain client (builder pattern)
+    pub fn with_solana(mut self, solana: SolanaClient) -> Self {
+        self.solana = Some(solana);
+        self
     }
 
     /// Broadcast message to all admins

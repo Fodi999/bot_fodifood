@@ -5,4 +5,5 @@ pub mod go_backend;
 pub mod rest;
 pub mod metrics;
 pub mod insight_ws;
+pub mod solana; // 🪙 Solana blockchain API
 pub mod user; // 👤 User management endpoints
