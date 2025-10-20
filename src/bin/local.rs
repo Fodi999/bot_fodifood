@@ -1,4 +1,7 @@
 use axum::{
+    extract::State,
+    http::StatusCode,
+    response::Json,
     routing::{get, post},
     Router,
 };
@@ -9,6 +12,10 @@ use std::sync::Arc;
 use fodifood_bot::{
     api, config::Config, handlers, state::AppState,
     bank, nft, wallet, // 💰 🧩 🔐 Token modules
+    ai::{
+        agent_manager::{AgentManager, AgentType},
+        persistent_memory::PersistentMemory,
+    },
 };
 use fodifood_bot::orchestration::{BackendOrchestrator, backend::OrchestratorConfig};
 
@@ -26,8 +33,41 @@ async fn main() {
     tracing::info!("✅ Configuration loaded");
     tracing::info!("📡 Go Backend URL: {}", config.go_backend_url);
 
-    // Initialize state
-    let mut state = AppState::new(config.clone());
+    // Initialize Multi-Agent AI System
+    tracing::info!("🤖 Initializing Multi-Agent AI System...");
+    
+    let memory = Arc::new(PersistentMemory::new("./data/local_agents.db").unwrap());
+    let mut agent_manager = AgentManager::new(memory.clone()).await.unwrap();
+    agent_manager.enable_shared_bus().await.unwrap();
+    
+    // Create specialized agents with automatic subscriptions
+    let agents = [
+        ("INV-LOCAL-001", AgentType::Investor, "💰 Investment Advisor", vec!["coordination", "investment_opportunities", "market_analysis"]),
+        ("BIZ-LOCAL-001", AgentType::Business, "🏢 Business Strategist", vec!["coordination", "business_insights", "growth_campaigns"]),
+        ("USER-LOCAL-001", AgentType::User, "👤 User Experience Agent", vec!["coordination", "user_interactions", "personalization"]),
+        ("SYS-LOCAL-001", AgentType::System, "⚙️ System Administrator", vec!["coordination", "system_alerts", "admin_tasks"]),
+    ];
+
+    for (id, agent_type, description, topics) in &agents {
+        agent_manager.create_agent(agent_type.clone(), id, None).await.unwrap();
+        
+        // Subscribe agent to its topics
+        if let Some(bus) = agent_manager.get_shared_bus() {
+            for topic in topics {
+                match bus.subscribe(id, vec![topic.to_string()]).await {
+                    Ok(_) => tracing::info!("📡 Agent {} subscribed to topic '{}'", id, topic),
+                    Err(e) => tracing::warn!("⚠️ Failed to subscribe {} to '{}': {}", id, topic, e),
+                }
+            }
+        }
+        
+        tracing::info!("✅ Created {}: {} with {} subscriptions", description, id, topics.len());
+    }
+    
+    tracing::info!("🚌 Multi-Agent system with shared bus ready");
+
+    // Initialize state with agent manager
+    let mut state = AppState::new(config.clone()).with_agent_manager(Arc::new(agent_manager));
     
     // Initialize Backend Orchestrator if enabled
     if config.orchestrator_enabled {
@@ -120,6 +160,13 @@ async fn main() {
         .route("/api/v1/admin/backend/status", get(api::backend_control::get_backend_status))
         .route("/api/v1/admin/backend/health", post(api::backend_control::backend_orchestrator_health))
         
+        // 🤖 Multi-Agent System Endpoints
+        .route("/api/v1/admin/agents", get(agent_list_handler))
+        .route("/api/v1/admin/agents/stats", get(agent_stats_handler))
+        .route("/api/v1/admin/agents/bus", get(shared_bus_stats_handler))
+        .route("/api/v1/admin/agents/coordinate", post(agent_coordinate_handler))
+        .route("/api/v1/admin/agents/subscribe", post(agent_subscribe_handler))
+        
         // 📊 Metrics Endpoints
         .route("/metrics", get(api::metrics::prometheus_metrics))
         .route("/admin/metrics", get(api::metrics::metrics_dashboard))
@@ -179,6 +226,13 @@ async fn main() {
     tracing::info!("🧩 NFT API:       http://{}/api/nft/*", addr);
     tracing::info!("💠 Solana API:    http://{}/api/solana/*", addr);
     tracing::info!("");
+    tracing::info!("🤖 Multi-Agent System:");
+    tracing::info!("   • Agents List:  http://{}/api/v1/admin/agents", addr);
+    tracing::info!("   • Agent Stats:  http://{}/api/v1/admin/agents/stats", addr);
+    tracing::info!("   • Bus Stats:    http://{}/api/v1/admin/agents/bus", addr);
+    tracing::info!("   • Subscribe:    POST http://{}/api/v1/admin/agents/subscribe", addr);
+    tracing::info!("   • Coordinate:   POST http://{}/api/v1/admin/agents/coordinate", addr);
+    tracing::info!("");
     tracing::info!("💬 Chat API:      http://{}/api/v1/chat", addr);
     tracing::info!("🔌 WebSocket:     ws://{}/ws", addr);
     tracing::info!("");
@@ -197,6 +251,144 @@ async fn root_handler() -> &'static str {
     "🍱 FodiFood Bot API - Running locally!"
 }
 
+/// Subscribe agent to topics
+async fn agent_subscribe_handler(
+    State(state): State<AppState>,
+    Json(payload): Json<serde_json::Value>
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    if let Some(agent_manager) = &state.agent_manager {
+        let agent_id = payload.get("agent_id").and_then(|s| s.as_str()).unwrap_or("");
+        let topics = payload.get("topics")
+            .and_then(|t| t.as_array())
+            .map(|arr| arr.iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect())
+            .unwrap_or_else(Vec::new);
+        
+        if agent_id.is_empty() || topics.is_empty() {
+            return Err((StatusCode::BAD_REQUEST, "agent_id and topics are required".to_string()));
+        }
+
+        if let Some(bus) = agent_manager.get_shared_bus() {
+            match bus.subscribe(agent_id, topics.clone()).await {
+                Ok(_) => {
+                    Ok(Json(serde_json::json!({
+                        "status": "subscribed",
+                        "agent_id": agent_id,
+                        "topics": topics,
+                        "timestamp": chrono::Utc::now().to_rfc3339()
+                    })))
+                }
+                Err(e) => {
+                    Err((StatusCode::INTERNAL_SERVER_ERROR, format!("Subscription failed: {}", e)))
+                }
+            }
+        } else {
+            Err((StatusCode::SERVICE_UNAVAILABLE, "SharedBus not enabled".to_string()))
+        }
+    } else {
+        Err((StatusCode::SERVICE_UNAVAILABLE, "Multi-Agent system not initialized".to_string()))
+    }
+}
+
 async fn health_handler() -> &'static str {
     "OK"
+}
+
+// 🤖 Agent Management Handlers
+
+/// List all active agents
+async fn agent_list_handler(
+    State(state): State<AppState>
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    if let Some(agent_manager) = &state.agent_manager {
+        let agent_ids = agent_manager.list_agents().await;
+        let agent_info: Vec<serde_json::Value> = agent_ids.into_iter().map(|agent_id| {
+            serde_json::json!({
+                "id": agent_id,
+                "status": "active"
+            })
+        }).collect();
+
+        Ok(Json(serde_json::json!({
+            "agents": agent_info,
+            "total": agent_info.len(),
+            "timestamp": chrono::Utc::now().to_rfc3339()
+        })))
+    } else {
+        Err((StatusCode::SERVICE_UNAVAILABLE, "Multi-Agent system not initialized".to_string()))
+    }
+}
+
+/// Get agent system statistics
+async fn agent_stats_handler(
+    State(state): State<AppState>
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    if let Some(agent_manager) = &state.agent_manager {
+        let agent_ids = agent_manager.list_agents().await;
+
+        Ok(Json(serde_json::json!({
+            "total_agents": agent_ids.len(),
+            "system_status": "operational",
+            "timestamp": chrono::Utc::now().to_rfc3339()
+        })))
+    } else {
+        Err((StatusCode::SERVICE_UNAVAILABLE, "Multi-Agent system not initialized".to_string()))
+    }
+}
+
+/// Get SharedBus statistics
+async fn shared_bus_stats_handler(
+    State(state): State<AppState>
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    if let Some(agent_manager) = &state.agent_manager {
+        if let Some(bus) = agent_manager.get_shared_bus() {
+            let stats = bus.get_stats().await;
+            Ok(Json(serde_json::json!({
+                "total_messages": stats.total_messages,
+                "active_subscriptions": stats.active_subscriptions,
+                "messages_per_topic": stats.messages_per_topic,
+                "avg_processing_time_ms": stats.avg_processing_time_ms,
+                "uptime_seconds": stats.uptime_seconds,
+                "last_activity": stats.last_activity,
+                "timestamp": chrono::Utc::now().to_rfc3339()
+            })))
+        } else {
+            Err((StatusCode::SERVICE_UNAVAILABLE, "SharedBus not enabled".to_string()))
+        }
+    } else {
+        Err((StatusCode::SERVICE_UNAVAILABLE, "Multi-Agent system not initialized".to_string()))
+    }
+}
+
+/// Trigger agent coordination
+async fn agent_coordinate_handler(
+    State(state): State<AppState>,
+    Json(payload): Json<serde_json::Value>
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    if let Some(agent_manager) = &state.agent_manager {
+        let coordinator = payload.get("coordinator").and_then(|s| s.as_str()).unwrap_or("system");
+        let task_id = payload.get("task_id").and_then(|s| s.as_str()).unwrap_or("demo-task");
+        let action = payload.get("action").and_then(|s| s.as_str()).unwrap_or("general_coordination");
+        let participants = payload.get("participants")
+            .and_then(|p| p.as_array())
+            .map(|arr| arr.iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect())
+            .unwrap_or_else(|| vec!["INV-LOCAL-001".to_string(), "BIZ-LOCAL-001".to_string()]);
+        
+        match agent_manager.coordinate_agents(coordinator, task_id, action, participants.clone()).await {
+            Ok(_) => {
+                Ok(Json(serde_json::json!({
+                    "status": "coordination_initiated",
+                    "coordinator": coordinator,
+                    "task_id": task_id,
+                    "action": action,
+                    "participants": participants,
+                    "timestamp": chrono::Utc::now().to_rfc3339()
+                })))
+            }
+            Err(e) => {
+                Err((StatusCode::INTERNAL_SERVER_ERROR, format!("Coordination failed: {}", e)))
+            }
+        }
+    } else {
+        Err((StatusCode::SERVICE_UNAVAILABLE, "Multi-Agent system not initialized".to_string()))
+    }
 }

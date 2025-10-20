@@ -25,6 +25,7 @@ pub struct AppState {
     pub insight_broadcaster: InsightBroadcaster, // 📡 AI Insight broadcaster
     pub backend_orchestrator: Option<Arc<BackendOrchestrator>>, // 🎯 Backend lifecycle manager
     pub solana: Option<SolanaClient>, // 🪙 Solana blockchain (optional for graceful degradation)
+    pub agent_manager: Option<Arc<crate::ai::AgentManager>>, // 🤖 Multi-Agent system
 }
 
 pub struct ClientConnection {
@@ -50,12 +51,19 @@ impl AppState {
             insight_broadcaster, // 📡 Добавляем insight broadcaster
             backend_orchestrator: None, // 🎯 Оркестратор добавляется опционально
             solana: None, // 🪙 Solana будет добавлен через with_solana()
+            agent_manager: None, // 🤖 Multi-Agent system добавляется опционально
         }
     }
 
     /// 🪙 Add Solana blockchain client (builder pattern)
     pub fn with_solana(mut self, solana: SolanaClient) -> Self {
         self.solana = Some(solana);
+        self
+    }
+
+    /// 🤖 Add Multi-Agent system (builder pattern)
+    pub fn with_agent_manager(mut self, agent_manager: Arc<crate::ai::AgentManager>) -> Self {
+        self.agent_manager = Some(agent_manager);
         self
     }
 

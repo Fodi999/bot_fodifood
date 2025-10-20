@@ -5,6 +5,7 @@ pub mod business_analyzer; // 💼 Business Brain (market analysis & strategic r
 pub mod investment_analyzer; // 💰 AI CFO (NPV, IRR, ROI, investment analysis)
 pub mod airdrop_agent; // 🎁 AI Airdrop Agent (token distribution & marketing campaigns)
 pub mod social_tasks; // 🌐 Social Tasks (viral marketing missions & LinkHub)
+pub mod growth_campaign; // 🌱 AI Growth Campaign Engine (autonomous marketing orchestration)
 pub mod admin_assistant; // 🔧 Admin AI assistant
 pub mod analysis; // 💡 AI-powered business analysis
 pub mod intent_handler; // 🎯 Intent handler system
@@ -14,6 +15,17 @@ pub mod modules;
 pub mod persistent_memory; // 💾 Persistent memory service
 mod rules;
 pub mod thinker; // 🧠 Cognitive module with Groq integration
+pub mod investor; // 💰 AI Investment Copilot
+
+// 🤖 Multi-Agent System
+pub mod agent_manager; // 🎭 Multi-agent management system
+pub mod agents; // 🤖 Specialized AI agents (investor, business, user)
+pub mod shared_bus; // 🚌 Real-time communication bus for agent coordination
+
+// 🔄 AI Business Economy Loop
+pub mod agent_state; // 💾 Persistent agent state management
+pub mod business_economy_loop; // 🔄 Self-improving business cycle orchestrator
+pub mod governance; // 🎭 AI governance layer for meta-management
 
 use crate::api::go_backend::GoBackendClient;
 use crate::config::Config;
@@ -25,6 +37,17 @@ pub use intents::{Intent, IntentClassifier};
 pub use memory::BotMemory;
 pub use rules::ResponseGenerator;
 pub use thinker::Thinker; // Экспортируем для внешнего использования
+
+// 🤖 Multi-Agent System exports
+pub use agent_manager::{AgentManager, AgentType};
+pub use agents::{InvestorAgent, BusinessAgent, UserAgent}; 
+pub use persistent_memory::PersistentMemory;
+pub use shared_bus::{SharedBus, CoordinationResult, CoordinationStatus, WorkflowStepResult, MessageType, BusMessage};
+
+// 🔄 AI Business Economy Loop exports
+pub use agent_state::{AgentStateManager, AgentState, PerformanceMetrics, AgentDecision, DecisionOutcome};
+pub use business_economy_loop::{BusinessEconomyLoop, CyclePerformance, BusinessPhase, LoopConfig};
+pub use governance::{AIGovernanceLayer, GovernanceConfig, GovernanceStatus, RiskTolerance};
 
 /// Главный AI движок бота
 pub struct AIEngine {

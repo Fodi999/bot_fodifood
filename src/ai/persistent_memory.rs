@@ -136,6 +136,30 @@ impl PersistentMemory {
         let size_on_disk = self.db.size_on_disk().unwrap_or(0);
         (total, size_on_disk as usize)
     }
+
+    /// Store generic data
+    pub async fn store(&self, key: &str, value: &str) -> Result<()> {
+        self.db.insert(key.as_bytes(), value.as_bytes())?;
+        self.db.flush_async().await?;
+        Ok(())
+    }
+
+    /// Retrieve generic data
+    pub async fn retrieve(&self, key: &str) -> Result<Option<String>> {
+        if let Some(value) = self.db.get(key.as_bytes())? {
+            let data = String::from_utf8(value.to_vec())?;
+            Ok(Some(data))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Delete generic data
+    pub async fn delete(&self, key: &str) -> Result<()> {
+        self.db.remove(key.as_bytes())?;
+        self.db.flush_async().await?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]

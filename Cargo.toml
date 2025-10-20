@@ -72,6 +72,8 @@ shellexpand = "3.1" # Shell path expansion (~/.config/solana/id.json)
 
 # Testing utilities
 tempfile = "3.8"
+regex = "1.12.2"
+log = "0.4.28"
 
 [profile.release]
 overflow-checks = true
