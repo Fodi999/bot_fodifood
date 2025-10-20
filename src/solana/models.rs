@@ -65,8 +65,15 @@ pub struct TransferRequest {
     pub from: String,
     /// Recipient wallet address
     pub to: String,
-    /// Amount to transfer (in tokens)
+    /// Amount to transfer (in tokens or lamports)
     pub amount: u64,
+    /// Token to transfer ("SOL" or "FODI", defaults to SOL)
+    #[serde(default = "default_token")]
+    pub token: String,
+}
+
+fn default_token() -> String {
+    "SOL".to_string()
 }
 
 /// Balance query request

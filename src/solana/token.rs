@@ -107,6 +107,79 @@ pub fn get_balance(client: &RpcClient, wallet: &Pubkey) -> Result<f64> {
     Ok(sol)
 }
 
+/// Transfer SPL tokens between wallets
+///
+/// # Arguments
+/// * `client` - Solana RPC client
+/// * `token_mint` - SPL token mint address
+/// * `from` - Sender keypair
+/// * `to` - Recipient wallet address
+/// * `amount` - Amount to transfer (in token units, not lamports)
+///
+/// # Returns
+/// Transaction signature as string
+pub fn transfer_spl_tokens(
+    client: &RpcClient,
+    token_mint: &Pubkey,
+    from: &Keypair,
+    to: &Pubkey,
+    amount: u64,
+) -> Result<String> {
+    tracing::info!("🪙 Transferring {} SPL tokens from {} to {}", 
+        amount, from.pubkey(), to);
+    
+    // Get or create associated token accounts
+    let from_ata = spl_associated_token_account::get_associated_token_address(&from.pubkey(), token_mint);
+    let to_ata = spl_associated_token_account::get_associated_token_address(to, token_mint);
+    
+    let mut instructions = vec![];
+    
+    // Check if recipient's associated token account exists
+    if client.get_account(&to_ata).is_err() {
+        tracing::info!("📦 Creating associated token account for recipient");
+        instructions.push(
+            spl_associated_token_account::instruction::create_associated_token_account(
+                &from.pubkey(),  // payer
+                to,              // wallet owner
+                token_mint,      // token mint
+                &spl_token::id(),
+            )
+        );
+    }
+    
+    // Add transfer instruction
+    instructions.push(
+        spl_token::instruction::transfer(
+            &spl_token::id(),
+            &from_ata,           // source
+            &to_ata,             // destination
+            &from.pubkey(),      // authority
+            &[],                 // signers
+            amount,
+        )?
+    );
+    
+    // Get latest blockhash and create transaction
+    let blockhash = client
+        .get_latest_blockhash()
+        .context("Failed to get latest blockhash")?;
+    
+    let tx = Transaction::new_signed_with_payer(
+        &instructions,
+        Some(&from.pubkey()),
+        &[from],
+        blockhash,
+    );
+    
+    // Send and confirm transaction
+    let sig = client
+        .send_and_confirm_transaction(&tx)
+        .context("Failed to send SPL token transfer")?;
+    
+    tracing::info!("✅ SPL token transfer successful. Signature: {}", sig);
+    Ok(sig.to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

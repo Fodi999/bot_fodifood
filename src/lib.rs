@@ -7,6 +7,9 @@ pub mod handlers;
 pub mod models;
 pub mod orchestration; // 🎯 Backend orchestration
 pub mod solana; // 🪙 Solana blockchain integration
+pub mod bank; // 💰 Token bank and tokenomics
+pub mod nft; // 🧩 NFT functionality for business-as-NFT
+pub mod wallet; // 🔐 Wallet management (v2.4)
 pub mod state;
 pub mod metrics;
 

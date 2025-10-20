@@ -1,9 +1,11 @@
 mod ai;
 mod api;
+mod bank; // 💰 Token bank & tokenomics
 mod config;
 mod handlers;
 mod metrics;
 mod models;
+mod nft; // 🧩 NFT module
 mod orchestration; // 🎯 Backend orchestration
 mod services; // 🌐 External service clients
 mod solana; // 🪙 Solana blockchain integration
@@ -63,7 +65,11 @@ async fn main(
         .merge(api::businesses::routes())
         // 🪙 Solana Blockchain API
         .merge(api::solana::routes())
-        // 👨‍💼 Admin Endpoints
+        // � Token Bank (v2.4)
+        .nest("/api/bank", bank::api::routes())
+        // 🧩 NFT Marketplace (v2.4) - coming soon
+        // .nest("/api/nft", nft::api::routes())
+        // �👨‍💼 Admin Endpoints
         .route("/api/v1/admin/stats", get(api::rest::get_admin_stats))
         .route(
             "/api/v1/admin/orders/recent",
@@ -102,6 +108,8 @@ async fn main(
     tracing::info!("🤖 FodiFood Bot API запущен и готов!");
     tracing::info!("📡 REST API v1 доступен по адресу /api/v1/*");
     tracing::info!("👨‍💼 Admin endpoints: /api/v1/admin/*");
+    tracing::info!("💰 Bank API: /api/bank/*");
+    // tracing::info!("🧩 NFT API: /api/nft/*");
 
     Ok(app.into())
 }

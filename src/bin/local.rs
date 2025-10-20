@@ -8,6 +8,7 @@ use std::sync::Arc;
 
 use fodifood_bot::{
     api, config::Config, handlers, state::AppState,
+    bank, nft, wallet, // 💰 🧩 🔐 Token modules
 };
 use fodifood_bot::orchestration::{BackendOrchestrator, backend::OrchestratorConfig};
 
@@ -65,6 +66,26 @@ async fn main() {
     tracing::info!("🧠 AI Engine ready with {} intent handlers", state.ai.registry_stats().0);
     tracing::info!("📊 Metrics collector initialized");
 
+    // Initialize Solana client if configured
+    if let Ok(solana_rpc) = std::env::var("SOLANA_RPC_URL") {
+        if let Ok(keypair_path) = std::env::var("FODI_TREASURY_KEYPAIR") {
+            match fodifood_bot::solana::SolanaClient::new(&solana_rpc, &keypair_path) {
+                Ok(solana_client) => {
+                    tracing::info!("✅ Solana client initialized: {}", solana_rpc);
+                    state = state.with_solana(solana_client);
+                }
+                Err(e) => {
+                    tracing::warn!("⚠️ Failed to initialize Solana client: {}", e);
+                    tracing::warn!("   Solana API will be disabled");
+                }
+            }
+        } else {
+            tracing::warn!("⚠️ FODI_TREASURY_KEYPAIR not set, Solana API disabled");
+        }
+    } else {
+        tracing::info!("ℹ️  SOLANA_RPC_URL not set, running without blockchain integration");
+    }
+
     // Build router
     let app = Router::new()
         // 🏠 Basic endpoints
@@ -116,8 +137,31 @@ async fn main() {
         .route("/api/v1/insight", get(api::insight_ws::ai_insight_ws)) // 📡 AI Insights
         .route("/notify", post(handlers::webhook::webhook_handler))
         
+        // 💠 Solana Blockchain API (before .with_state)
+        .merge(api::solana::routes())
+        
         .layer(CorsLayer::permissive())
         .with_state(state);
+
+    // Create shared ledger for bank and wallet
+    let shared_ledger = Arc::new(
+        bank::ledger::TokenLedger::with_persistence("data/fodi_ledger.db")
+            .unwrap_or_else(|_| bank::ledger::TokenLedger::new())
+    );
+
+    // Create shared wallet database connection (used by wallet and NFT modules)
+    let wallet_db = Arc::new(
+        sled::open("data/wallets.db")
+            .expect("Failed to open wallet database")
+    );
+
+    tracing::info!("💾 Shared wallet database initialized");
+
+    // Add bank, wallet, and NFT routes with shared connections
+    let app = app
+        .nest("/api/bank", bank::api::routes_with_ledger(shared_ledger.clone()))
+        .nest("/api/wallet", wallet::api::routes(shared_ledger, wallet_db.clone()))
+        .nest("/api/nft", nft::api::routes(wallet_db));
 
     // Bind to address
     let addr = SocketAddr::from(([127, 0, 0, 1], 8000));
@@ -129,6 +173,11 @@ async fn main() {
     tracing::info!("   • Dashboard:  http://{}/admin/metrics", addr);
     tracing::info!("   • Intents:    http://{}/admin/metrics/intents", addr);
     tracing::info!("   • Stats:      http://{}/admin/metrics/stats", addr);
+    tracing::info!("");
+    tracing::info!("💰 Bank API:      http://{}/api/bank/*", addr);
+    tracing::info!("🔐 Wallet API:    http://{}/api/wallet/*", addr);
+    tracing::info!("🧩 NFT API:       http://{}/api/nft/*", addr);
+    tracing::info!("💠 Solana API:    http://{}/api/solana/*", addr);
     tracing::info!("");
     tracing::info!("💬 Chat API:      http://{}/api/v1/chat", addr);
     tracing::info!("🔌 WebSocket:     ws://{}/ws", addr);

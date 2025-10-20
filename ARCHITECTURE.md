@@ -1,4 +1,4 @@
-# 📊 FodiFood Bot - Технический обзор v2.3
+# 📊 FodiFood Bot - Технический обзор v2.4
 
 ## 🏗️ Архитектура
 
@@ -14,7 +14,7 @@
 - **Deployment**: Shuttle.rs 0.57
 - **Serialization**: serde + serde_json
 
-### Структура проекта v2.3 (85+ Rust файлов)
+### Структура проекта v2.4 (95+ Rust файлов)
 
 ```
 src/
@@ -23,7 +23,108 @@ src/
 ├── config.rs                  # Configuration from env vars
 ├── state.rs                   # Shared app state (with orchestrator)
 │
-├── handlers/                  # HTTP & WebSocket handlers
+├── handlers/                  # HTTP & W## 💰 Token Bank & Tokenomics (v2.4)
+
+### Ledger System
+```rust
+pub struct TokenLedger {
+    balances: Arc<RwLock<HashMap<String, Balance>>>,
+    transactions: Arc<RwLock<Vec<Transaction>>>,
+}
+
+pub struct Balance {
+    pub total: u64,        // Total tokens
+    pub locked: u64,       // Locked in orders/escrow
+    pub available: u64,    // Available for use
+}
+```
+
+### Reward Engine
+- **Order completion**: 0.1 FODI
+- **Referral bonus**: 0.5 FODI
+- **Daily login**: 0.01 FODI
+- **Review reward**: 0.05 FODI
+
+### Burn Mechanism
+- **Transaction burn**: 1% автоматически
+- **Minimum burn**: 0.001 FODI
+- **Deflationary model**: Уменьшение supply со временем
+
+### Stripe Exchange
+```rust
+pub struct ExchangeRate {
+    pub usd_per_sol: f64,      // Live rate
+    pub sol_per_fodi: f64,     // Fixed or dynamic
+    pub updated_at: i64,
+}
+
+// Example: $10 → 10,000 FODI
+let fodi_amount = rate.usd_to_fodi(10.0);
+```
+
+## 🧩 NFT Business Module (v2.4)
+
+### Business-as-NFT Concept
+Каждый ресторан/бизнес = уникальный NFT с метаданными:
+
+```rust
+pub struct BusinessNft {
+    pub mint: String,          // NFT mint address
+    pub name: String,          // "Sushi Paradise"
+    pub owner: String,         // Current owner
+    pub attributes: BusinessAttributes {
+        business_type: "restaurant",
+        cuisine: "sushi",
+        location: "Tokyo",
+        rating: 4.8,
+        total_orders: 1000,
+        established_date: "2024-01-01"
+    }
+}
+```
+
+### NFT Marketplace
+```rust
+pub struct NftListing {
+    pub nft: BusinessNft,
+    pub price: u64,            // In FODI or SOL
+    pub currency: Currency,    // FODI | SOL
+    pub status: ListingStatus, // Active | Sold | Cancelled
+    pub expires_at: Option<DateTime>,
+}
+```
+
+**Marketplace Features:**
+- ✅ Create listings (с expiration)
+- ✅ Buy/Sell business NFTs
+- ✅ Price discovery (floor price, average)
+- ✅ Sales history tracking
+- ✅ Search by cuisine/type
+- ✅ Marketplace fee (2.5% default)
+
+### Metadata Updates
+- **Dynamic attributes**: Rating, orders обновляются
+- **On-chain metadata**: Metaplex standard
+- **Off-chain JSON**: Hosted on GitHub/IPFS
+
+## 🎯 Ключевые особенности v2.4
+
+1. ✨ **Полностью асинхронный** - высокая производительность (Tokio)
+2. 🤖 **AI-powered** - 17 intent handlers + GPT-4o-mini
+3. 💼 **Business Intelligence** - инвестиционный анализ с scoring
+4. 🔐 **Безопасный** - JWT auth, RBAC, protected keypairs
+5. 📡 **Real-time** - WebSocket для чата, уведомлений, AI insights
+6. 📊 **Мониторинг** - Prometheus метрики, web dashboard
+7. 🔄 **Интегрированный** - Next.js + Go Backend + Solana
+8. 🪙 **Blockchain** - Solana SPL tokens + Metaplex
+9. 💰 **Token Bank** - Rewards, burns, Stripe exchange (NEW!)
+10. 🧩 **NFT Marketplace** - Business-as-NFT trading (NEW!)
+11. 🎯 **Orchestration** - автоматическое управление backend
+12. 🚀 **Production-ready** - Shuttle deployment, auto-scaling
+13. 🌐 **Масштабируемый** - 1000+ concurrent connections
+14. 🛠️ **Расширяемый** - модульная архитектура, легко добавлять функции
+15. 🧪 **Тестируемый** - 70+ unit tests, integration tests
+16. 📚 **Документированный** - подробная документация + примерыs
 │   ├── ws.rs                 # WebSocket logic (auth, messages)
 │   ├── webhook.rs            # Webhook endpoint from Go backend
 │   ├── insight_events.rs     # 📡 AI event types (9 types)
@@ -85,6 +186,19 @@ src/
 │   ├── create_mint.rs        # Token creation
 │   ├── add_metadata.rs       # Metaplex metadata
 │   └── models.rs             # Blockchain types
+│
+├── bank/                      # 💰 Token Bank & Tokenomics (v2.4)
+│   ├── mod.rs                # Bank module exports
+│   ├── ledger.rs             # Balance tracking & transactions
+│   ├── api.rs                # REST endpoints for bank
+│   ├── rewards.rs            # Reward & burn mechanisms
+│   └── exchange.rs           # Stripe/SOL exchange
+│
+├── nft/                       # 🧩 NFT Module (v2.4)
+│   ├── mod.rs                # NFT module exports
+│   ├── mint.rs               # NFT minting (Business-as-NFT)
+│   ├── metadata.rs           # Metadata creation & updates
+│   └── marketplace.rs        # NFT marketplace & sales
 │
 ├── orchestration/             # 🎯 Backend Orchestration
 │   ├── mod.rs
@@ -315,6 +429,22 @@ Real-time события обработки AI
 |--------|------|-------------|
 | GET | `/api/v1/solana/token/{mint}` | Token info |
 | POST | `/api/v1/solana/transfer` | Transfer tokens |
+
+#### Token Bank (v2.4) 💰
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/bank/health` | Bank module health |
+| GET | `/api/bank/balance/:user_id` | Get user balance |
+| GET | `/api/bank/transactions/:user_id` | Get user transactions |
+| GET | `/api/bank/admin/transactions` | Get all transactions (admin) |
+
+#### NFT Marketplace (v2.4) 🧩
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/nft/mint` | Mint business NFT |
+| GET | `/api/nft/listings` | Get active listings |
+| GET | `/api/nft/listing/:id` | Get listing details |
+| POST | `/api/nft/marketplace/stats` | Get marketplace stats |
 
 ## 🧠 AI Интеллект v2.2
 

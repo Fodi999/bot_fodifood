@@ -5,7 +5,7 @@ use axum::{
     routing::{get, post},
     Router,
 };
-use serde_json::json;
+use serde_json::{json, Value};
 use solana_sdk::signature::Signer;
 
 use crate::solana::{mint_tokens, transfer_tokens, get_balance, create_fodi_token_with_client};
@@ -18,7 +18,7 @@ pub fn routes() -> Router<AppState> {
         .route("/api/solana/mint", post(mint_handler))
         .route("/api/solana/transfer", post(transfer_handler))
         .route("/api/solana/balance", post(balance_handler))
-        .route("/api/solana/balance/:wallet", get(get_balance_by_path))
+        .route("/api/solana/balance/{wallet}", get(get_balance_by_path))
         .route("/api/solana/stake", post(stake_handler))
         .route("/api/solana/create-fodi-token", post(create_fodi_token_handler))
         .route("/api/solana/status", get(status_handler))
@@ -108,25 +108,84 @@ async fn transfer_handler(
         }
     };
 
-    // Execute transfer (using payer as sender for simplicity)
-    // Note: In production, you'd need the actual sender's keypair
-    match transfer_tokens(&solana.rpc, solana.payer.as_ref(), &to, req.amount) {
-        Ok(signature) => {
-            tracing::info!("✅ Transferred {} lamports from payer to {}: {}", 
-                req.amount, req.to, signature);
-            (
-                StatusCode::OK,
-                Json(TokenResponse::success(signature)),
-            )
+    // Determine token type and execute transfer
+    let token_type = req.token.to_uppercase();
+    let signature = match token_type.as_str() {
+        "SOL" => {
+            // Native SOL transfer
+            match transfer_tokens(&solana.rpc, solana.payer.as_ref(), &to, req.amount) {
+                Ok(sig) => {
+                    tracing::info!("✅ Transferred {} SOL (lamports) from treasury to {}", 
+                        req.amount, req.to);
+                    sig
+                }
+                Err(e) => {
+                    tracing::error!("❌ SOL transfer failed: {}", e);
+                    return (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        Json(TokenResponse::error(format!("SOL transfer failed: {}", e))),
+                    );
+                }
+            }
         }
-        Err(e) => {
-            tracing::error!("❌ Transfer failed: {}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(TokenResponse::error(format!("Transfer failed: {}", e))),
-            )
+        "FODI" => {
+            // FODI SPL token transfer
+            let mint_address = match std::env::var("FODI_MINT_ADDRESS") {
+                Ok(addr) => addr,
+                Err(_) => {
+                    return (
+                        StatusCode::SERVICE_UNAVAILABLE,
+                        Json(TokenResponse::error("FODI_MINT_ADDRESS not configured")),
+                    );
+                }
+            };
+
+            let mint_pubkey: solana_sdk::pubkey::Pubkey = match mint_address.parse() {
+                Ok(pubkey) => pubkey,
+                Err(e) => {
+                    return (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        Json(TokenResponse::error(format!("Invalid FODI_MINT_ADDRESS: {}", e))),
+                    );
+                }
+            };
+
+            match crate::solana::token::transfer_spl_tokens(&solana.rpc, &mint_pubkey, solana.payer.as_ref(), &to, req.amount) {
+                Ok(sig) => {
+                    tracing::info!("✅ Transferred {} FODI tokens from treasury to {}", 
+                        req.amount, req.to);
+                    sig
+                }
+                Err(e) => {
+                    tracing::error!("❌ FODI transfer failed: {}", e);
+                    return (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        Json(TokenResponse::error(format!("FODI transfer failed: {}", e))),
+                    );
+                }
+            }
         }
-    }
+        _ => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(TokenResponse::error(format!("Unsupported token type: {}. Use 'SOL' or 'FODI'", req.token))),
+            );
+        }
+    };
+
+    // Return success with transaction details
+    tracing::info!("📦 Transfer complete: {} {} to {}", req.amount, token_type, req.to);
+    
+    (
+        StatusCode::OK,
+        Json(TokenResponse {
+            status: "ok".to_string(),
+            tx: Some(signature),
+            balance: None,
+            wallet: Some(req.to),
+            error: None,
+        }),
+    )
 }
 
 /// POST /api/solana/balance - Get wallet balance
@@ -209,7 +268,7 @@ async fn status_handler(
     }
 }
 
-/// GET /api/solana/balance/:wallet - Get wallet balance via path parameter
+/// GET /api/solana/balance/{wallet} - Get wallet balance via path parameter
 async fn get_balance_by_path(
     State(state): State<AppState>,
     axum::extract::Path(wallet): axum::extract::Path<String>,
