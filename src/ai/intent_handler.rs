@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use std::collections::HashMap;
+use whatlang::detect;
 
 use crate::state::AppState;
 
@@ -190,5 +191,71 @@ mod tests {
         registry.register(Box::new(TestHandler));
         assert_eq!(registry.count(), 1);
         assert_eq!(registry.registered_handlers(), vec!["test"]);
+    }
+}
+
+// ============================================================
+// 🌐 Language Detection Utilities
+// ============================================================
+
+/// Detects the language of user input text
+/// 
+/// Returns ISO 639-1 language code (e.g., "en", "ru", "pl")
+/// Falls back to "en" if detection fails
+/// 
+/// # Examples
+/// ```
+/// let lang = get_user_language("Покажи меню");
+/// assert_eq!(lang, "ru");
+/// ```
+pub fn get_user_language(text: &str) -> String {
+    if let Some(info) = detect(text) {
+        info.lang().code().to_string()
+    } else {
+        "en".to_string() // Default to English
+    }
+}
+
+/// Creates a language-specific prompt for Groq AI
+/// 
+/// Wraps user message with instruction to respond in detected language
+/// 
+/// # Examples
+/// ```
+/// let prompt = create_multilang_prompt("Покажи меню");
+/// // Returns: "Ответь на русском: Покажи меню"
+/// ```
+pub fn create_multilang_prompt(message: &str) -> String {
+    let lang = get_user_language(message);
+    
+    match lang.as_str() {
+        "ru" => format!("Ответь на русском языке: {}", message),
+        "pl" => format!("Odpowiedz po polsku: {}", message),
+        "es" => format!("Responde en español: {}", message),
+        "de" => format!("Antworte auf Deutsch: {}", message),
+        "fr" => format!("Réponds en français: {}", message),
+        "it" => format!("Rispondi in italiano: {}", message),
+        "ja" => format!("日本語で答えてください: {}", message),
+        _ => message.to_string(), // English or other - let Groq auto-detect
+    }
+}
+
+/// Gets language name with emoji flag for logging/UI
+pub fn get_language_display(text: &str) -> String {
+    if let Some(info) = detect(text) {
+        let flag = match info.lang().code() {
+            "en" => "🇬🇧",
+            "ru" => "🇷🇺",
+            "pl" => "🇵🇱",
+            "es" => "🇪🇸",
+            "de" => "🇩🇪",
+            "fr" => "🇫🇷",
+            "it" => "🇮🇹",
+            "ja" => "🇯🇵",
+            _ => "🌍",
+        };
+        format!("{} {} ({:.0}% confidence)", flag, info.lang().name(), info.confidence() * 100.0)
+    } else {
+        "🌍 Unknown".to_string()
     }
 }

@@ -49,6 +49,9 @@ chrono = { version = "0.4", features = ["serde"] }
 dashmap = "6.0"
 uuid = { version = "1.0", features = ["v4"] }
 
+# Language detection
+whatlang = "0.16"
+
 # Random (для живости бота)
 rand = "0.8"
 
@@ -64,7 +67,11 @@ spl-token = "6.0.0"
 spl-associated-token-account = "6.0.0"
 mpl-token-metadata = "5.1.1"
 bs58 = "0.5" # Base58 encoding for wallet keys
+borsh = "1.5" # Borsh serialization for Solana programs
+shellexpand = "3.1" # Shell path expansion (~/.config/solana/id.json)
 
 # Testing utilities
 tempfile = "3.8"
 
+[profile.release]
+overflow-checks = true

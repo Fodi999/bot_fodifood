@@ -1,3 +1,6 @@
+pub mod core; // 🧠 Core AI infrastructure (Groq API)
+pub mod control; // 🎛️ AI Control Layer (security, monitoring, access control)
+pub mod agent; // 🤖 Autonomous AI Agent (Copilot-level decision making)
 pub mod admin_assistant; // 🔧 Admin AI assistant
 pub mod analysis; // 💡 AI-powered business analysis
 pub mod intent_handler; // 🎯 Intent handler system
@@ -6,7 +9,7 @@ mod memory;
 pub mod modules;
 pub mod persistent_memory; // 💾 Persistent memory service
 mod rules;
-mod thinker; // 🧠 Новый когнитивный модуль // 📦 Modular intent handlers
+pub mod thinker; // 🧠 Cognitive module with Groq integration
 
 use crate::api::go_backend::GoBackendClient;
 use crate::config::Config;

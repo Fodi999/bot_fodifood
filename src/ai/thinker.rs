@@ -1,9 +1,39 @@
-/// Когнитивная прослойка — эмоциональный анализ и персонализация
+//! Cognitive Layer - Emotional analysis, personalization, and Groq AI integration
+//! 
+//! This module serves as the "consciousness" of FodiFood AI:
+//! - Groq integration for LLM-powered reasoning
+//! - Emotional analysis and mood detection  
+//! - Context extraction and personalization
+//! - Complexity analysis
+//! - Activity logging for debugging and monitoring
 
-/// Анализатор настроения и эмоций пользователя
+use crate::ai::core::{query_groq_with_config, query_groq_with_system, GroqConfig, GroqModel};
+use anyhow::Result;
+use std::fs::OpenOptions;
+use std::io::Write;
+use chrono::Utc;
+
+/// Analyzer for mood, emotions, and AI-powered reasoning
 pub struct Thinker;
 
 impl Thinker {
+    /// 📝 Logs AI activity to file for debugging and monitoring
+    /// 
+    /// Creates/appends to ai_activity.log in the project root
+    fn log_activity(prompt: &str, response: &str) {
+        if let Ok(mut log) = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open("ai_activity.log")
+        {
+            let timestamp = Utc::now().format("%Y-%m-%d %H:%M:%S UTC");
+            let _ = writeln!(log, "------------------------------------------------------------");
+            let _ = writeln!(log, "⏰ Timestamp: {}", timestamp);
+            let _ = writeln!(log, "🧠 Prompt: {}", prompt);
+            let _ = writeln!(log, "💬 Response: {}", response);
+            let _ = writeln!(log, "");
+        }
+    }
     /// 🎭 Определяет настроение пользователя по тексту
     pub fn detect_mood(message: &str) -> &'static str {
         let text = message.to_lowercase();
@@ -338,6 +368,207 @@ impl Thinker {
             (None, _) => "👋 Привет! Рад, что ты вернулся!".to_string(),
         }
     }
+
+    // ================== GROQ AI INTEGRATION ==================
+
+    /// 🧠 Advanced thinking using Groq Llama 3.3 70B
+    /// 
+    /// This is the main "consciousness" function - use it for complex reasoning
+    /// All prompts and responses are logged to ai_activity.log
+    /// 
+    /// # Examples
+    /// ```
+    /// let answer = Thinker::think("Analyze customer data and suggest improvements").await?;
+    /// ```
+    pub async fn think(prompt: &str) -> Result<String> {
+        tracing::info!("🧠 Thinking via Groq Llama 3.3 70B...");
+        
+        let system_prompt = "You are FodiFood AI - an intelligent restaurant assistant. \
+                            Be helpful, concise, and friendly. Focus on food, orders, and business analysis.";
+        
+        match query_groq_with_system(system_prompt, prompt, &GroqConfig::default()).await {
+            Ok(response) => {
+                tracing::info!("✅ Groq response received ({} chars)", response.len());
+                
+                // Log activity to file
+                Self::log_activity(prompt, &response);
+                
+                Ok(response)
+            }
+            Err(e) => {
+                tracing::error!("❌ Groq thinking failed: {}", e);
+                let fallback = "🤔 Обрабатываю запрос... (AI временно недоступен)";
+                
+                // Log failure too
+                Self::log_activity(prompt, &format!("ERROR: {}", e));
+                
+                Ok(fallback.to_string())
+            }
+        }
+    }
+
+    /// 🚀 Fast thinking using Groq Llama 3.1 8B (instant)
+    /// 
+    /// Use this for simple, quick responses where speed matters more than depth
+    /// Logged to ai_activity.log with [FAST] tag
+    pub async fn think_fast(prompt: &str) -> Result<String> {
+        tracing::debug!("⚡ Fast thinking via Groq Llama 3.1 8B...");
+        
+        let config = GroqConfig {
+            model: GroqModel::Llama8B,
+            temperature: 0.7,
+            max_tokens: 1024,
+            top_p: 0.9,
+        };
+        
+        match query_groq_with_config(prompt, &config).await {
+            Ok(response) => {
+                // Log with FAST tag
+                Self::log_activity(&format!("[FAST] {}", prompt), &response);
+                Ok(response)
+            }
+            Err(e) => {
+                tracing::warn!("⚠️ Fast thinking failed: {}", e);
+                Self::log_activity(&format!("[FAST] {}", prompt), &format!("ERROR: {}", e));
+                Ok("Обрабатываю...".to_string())
+            }
+        }
+    }
+
+    /// 💼 Business analysis using Groq
+    /// 
+    /// Analyzes business data and provides actionable insights
+    /// Logged with [BUSINESS] tag
+    pub async fn analyze_business(data_summary: &str) -> Result<String> {
+        let prompt = format!(
+            "Проанализируй бизнес-данные ресторана FodiFood:\n\n{}\n\n\
+             Дай конкретные рекомендации по улучшению прибыли, оптимизации меню и управлению запасами.",
+            data_summary
+        );
+        
+        let config = GroqConfig {
+            model: GroqModel::Llama70B, // Use most powerful for analysis
+            temperature: 0.3, // Lower temperature for factual analysis
+            max_tokens: 2048,
+            top_p: 0.9,
+        };
+        
+        match query_groq_with_system(
+            "You are a business analyst specializing in restaurant analytics. \
+             Provide data-driven insights and actionable recommendations.",
+            &prompt,
+            &config
+        ).await {
+            Ok(analysis) => {
+                tracing::info!("📊 Business analysis completed");
+                Self::log_activity(&format!("[BUSINESS] {}", prompt), &analysis);
+                Ok(analysis)
+            }
+            Err(e) => {
+                tracing::error!("❌ Business analysis failed: {}", e);
+                Self::log_activity(&format!("[BUSINESS] {}", prompt), &format!("ERROR: {}", e));
+                Ok("📊 Анализ временно недоступен. Попробуйте позже.".to_string())
+            }
+        }
+    }
+
+    /// 🎯 Generate personalized recommendations using AI
+    /// 
+    /// Takes user context and generates smart recommendations
+    /// Logged with [RECOMMEND] tag
+    pub async fn get_ai_recommendation(context: &str, user_preferences: Option<&str>) -> Result<String> {
+        let prompt = if let Some(prefs) = user_preferences {
+            format!(
+                "Пользователь спрашивает: {}\n\
+                 Его предпочтения: {}\n\n\
+                 Порекомендуй блюда из меню FodiFood, учитывая контекст и предпочтения.",
+                context, prefs
+            )
+        } else {
+            format!(
+                "Пользователь спрашивает: {}\n\n\
+                 Порекомендуй подходящие блюда из меню FodiFood.",
+                context
+            )
+        };
+        
+        let config = GroqConfig {
+            model: GroqModel::Llama70B,
+            temperature: 0.8, // Higher temperature for creative recommendations
+            max_tokens: 1024,
+            top_p: 0.95,
+        };
+        
+        match query_groq_with_system(
+            "You are a knowledgeable food consultant. Recommend dishes that match user preferences. \
+             Be enthusiastic and descriptive about food.",
+            &prompt,
+            &config
+        ).await {
+            Ok(recommendation) => {
+                Self::log_activity(&format!("[RECOMMEND] {}", prompt), &recommendation);
+                Ok(recommendation)
+            }
+            Err(e) => {
+                tracing::error!("❌ AI recommendation failed: {}", e);
+                Self::log_activity(&format!("[RECOMMEND] {}", prompt), &format!("ERROR: {}", e));
+                Ok("🍕 Рекомендую попробовать наши популярные блюда! Напиши 'меню' чтобы увидеть все.".to_string())
+            }
+        }
+    }
+
+    /// 🔍 Extract structured information using AI
+    /// 
+    /// Uses Groq to extract specific entities from unstructured text
+    pub async fn extract_with_ai(text: &str, entity_type: &str) -> Result<Option<String>> {
+        let prompt = format!(
+            "Extract {} from this text: \"{}\"\n\
+             Return ONLY the extracted value, nothing else. If not found, return 'NONE'.",
+            entity_type, text
+        );
+        
+        match Self::think_fast(&prompt).await {
+            Ok(result) => {
+                let trimmed = result.trim();
+                if trimmed.eq_ignore_ascii_case("NONE") || trimmed.is_empty() {
+                    Ok(None)
+                } else {
+                    Ok(Some(trimmed.to_string()))
+                }
+            }
+            Err(_) => Ok(None),
+        }
+    }
+    
+    /// 🔍 Enhanced entity extraction - returns both ingredient and product
+    /// 
+    /// This is the advanced version for agent use
+    pub fn extract_entities_advanced(text: &str) -> (Option<String>, Option<String>) {
+        let ingredient = Self::extract_ingredient(text);
+        let product = Self::extract_product(text);
+        (ingredient, product)
+    }
+    
+    /// 📊 List all public Thinker functions (for monitoring/debugging)
+    pub fn list_public_functions() -> Vec<&'static str> {
+        vec![
+            "detect_mood",
+            "extract_emotion",
+            "personalize",
+            "extract_keywords",
+            "extract_ingredient",
+            "extract_product",
+            "detect_conversation_type",
+            "analyze_complexity",
+            "generate_greeting",
+            "think",
+            "think_fast",
+            "analyze_business",
+            "get_ai_recommendation",
+            "extract_with_ai",
+            "extract_entities_advanced",
+        ]
+    }
 }
 
 #[cfg(test)]
@@ -382,4 +613,13 @@ mod tests {
             "medium"
         );
     }
+}
+
+/// 📊 Thinker module statistics
+#[derive(Debug, Clone)]
+pub struct ThinkerStats {
+    pub total_functions: usize,
+    pub cognitive_functions: usize,
+    pub ai_functions: usize,
+    pub security_functions: usize,
 }
