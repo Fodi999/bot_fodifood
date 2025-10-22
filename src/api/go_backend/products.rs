@@ -25,12 +25,90 @@ impl ProductsClient {
             .await
             .context("Failed to fetch products")?;
 
+        // If backend returns 404, use fallback menu
+        if response.status() == 404 {
+            tracing::warn!("⚠️ Backend /products endpoint not found, using fallback menu");
+            return Ok(Self::get_fallback_menu());
+        }
+
         let products = response
             .json::<Vec<Product>>()
             .await
             .context("Failed to parse products response")?;
 
         Ok(products)
+    }
+
+    /// 🍽️ Fallback menu (used when backend is unavailable)
+    fn get_fallback_menu() -> Vec<Product> {
+        vec![
+            Product {
+                id: "1".to_string(),
+                name: "Филадельфия".to_string(),
+                description: Some("Лосось, сливочный сыр, огурец".to_string()),
+                price: 450.0,
+                category: Some("Роллы".to_string()),
+                weight: Some("250г".to_string()),
+                is_visible: Some(true),
+                image_url: None,
+                created_at: None,
+            },
+            Product {
+                id: "2".to_string(),
+                name: "Калифорния".to_string(),
+                description: Some("Краб, авокадо, икра тобико".to_string()),
+                price: 380.0,
+                category: Some("Роллы".to_string()),
+                weight: Some("240г".to_string()),
+                is_visible: Some(true),
+                image_url: None,
+                created_at: None,
+            },
+            Product {
+                id: "3".to_string(),
+                name: "Маргарита".to_string(),
+                description: Some("Томаты, моцарелла, базилик".to_string()),
+                price: 350.0,
+                category: Some("Пицца".to_string()),
+                weight: Some("400г".to_string()),
+                is_visible: Some(true),
+                image_url: None,
+                created_at: None,
+            },
+            Product {
+                id: "4".to_string(),
+                name: "Пепперони".to_string(),
+                description: Some("Салями, моцарелла, томатный соус".to_string()),
+                price: 420.0,
+                category: Some("Пицца".to_string()),
+                weight: Some("450г".to_string()),
+                is_visible: Some(true),
+                image_url: None,
+                created_at: None,
+            },
+            Product {
+                id: "5".to_string(),
+                name: "Том Ям".to_string(),
+                description: Some("Острый тайский суп с креветками".to_string()),
+                price: 320.0,
+                category: Some("Супы".to_string()),
+                weight: Some("350мл".to_string()),
+                is_visible: Some(true),
+                image_url: None,
+                created_at: None,
+            },
+            Product {
+                id: "6".to_string(),
+                name: "Coca-Cola".to_string(),
+                description: Some("Газированный напиток".to_string()),
+                price: 90.0,
+                category: Some("Напитки".to_string()),
+                weight: Some("330мл".to_string()),
+                is_visible: Some(true),
+                image_url: None,
+                created_at: None,
+            },
+        ]
     }
 
     /// 📋 Format products list for display
