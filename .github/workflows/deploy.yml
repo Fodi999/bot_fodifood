@@ -1,0 +1,134 @@
+name: Deploy to Shuttle
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v3
+      
+      - name: 🦀 Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          components: rustfmt, clippy
+      
+      - name: 📦 Cache cargo registry
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+      
+      - name: 📦 Cache cargo index
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+      
+      - name: 📦 Cache target directory
+        uses: actions/cache@v3
+        with:
+          path: target
+          key: ${{ runner.os }}-target-${{ hashFiles('**/Cargo.lock') }}
+      
+      - name: 🔍 Run tests
+        run: cargo test --all-features
+      
+      - name: 📝 Check formatting
+        run: cargo fmt -- --check
+      
+      - name: 🔎 Run clippy
+        run: cargo clippy -- -D warnings || true
+      
+      - name: 🚀 Install Shuttle CLI
+        run: cargo install cargo-shuttle
+      
+      - name: 🔐 Login to Shuttle
+        env:
+          SHUTTLE_API_KEY: ${{ secrets.SHUTTLE_API_KEY }}
+        run: |
+          shuttle login --api-key $SHUTTLE_API_KEY
+      
+      - name: 📝 Create Secrets.toml
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GO_BACKEND_URL: ${{ secrets.GO_BACKEND_URL }}
+          SOLANA_KEYPAIR: ${{ secrets.SOLANA_KEYPAIR }}
+        run: |
+          cat > Secrets.toml << EOF
+          # Database
+          DATABASE_URL = "$DATABASE_URL"
+          
+          # AI Configuration
+          GROQ_API_KEY = "$GROQ_API_KEY"
+          GROQ_MODEL = "llama-3.1-8b-instant"
+          
+          # Solana
+          SOLANA_NETWORK = "devnet"
+          SOLANA_RPC_URL = "https://api.devnet.solana.com"
+          KEYPAIR_PATH = "./data/keypair.json"
+          
+          # Go Backend
+          GO_BACKEND_URL = "$GO_BACKEND_URL"
+          
+          # Orchestrator (disabled on Shuttle)
+          ORCHESTRATOR_ENABLED = "false"
+          EOF
+      
+      - name: 📁 Create keypair file
+        env:
+          SOLANA_KEYPAIR: ${{ secrets.SOLANA_KEYPAIR }}
+        run: |
+          mkdir -p data
+          echo "$SOLANA_KEYPAIR" > data/keypair.json
+      
+      - name: 🚀 Deploy to Shuttle
+        run: shuttle deploy --allow-dirty --name fodifood-bot
+      
+      - name: ⏳ Wait for deployment
+        run: sleep 15
+      
+      - name: 🏥 Health Check
+        run: |
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" https://fodifood-bot.shuttleapp.rs/health)
+          if [ $RESPONSE -eq 200 ]; then
+            echo "✅ Health check passed!"
+          else
+            echo "❌ Health check failed with status: $RESPONSE"
+            exit 1
+          fi
+      
+      - name: 🧪 Test API Endpoints
+        run: |
+          # Test multi-agent status
+          curl -f https://fodifood-bot.shuttleapp.rs/api/v1/admin/agents || echo "⚠️ Agents API not responding"
+          
+          # Test metrics
+          curl -f https://fodifood-bot.shuttleapp.rs/metrics || echo "⚠️ Metrics not responding"
+      
+      - name: ✅ Deployment Success
+        if: success()
+        run: |
+          echo "🎉 Deployment successful!"
+          echo "📡 URL: https://fodifood-bot.shuttleapp.rs"
+          echo "🏥 Health: https://fodifood-bot.shuttleapp.rs/health"
+          echo "📊 Metrics: https://fodifood-bot.shuttleapp.rs/metrics"
+          echo "🤖 Agents: https://fodifood-bot.shuttleapp.rs/api/v1/admin/agents"
+      
+      - name: ❌ Deployment Failed
+        if: failure()
+        run: |
+          echo "❌ Deployment failed!"
+          echo "📝 Check logs: shuttle logs"
+          echo "🔍 Debug: shuttle status"
