@@ -55,9 +55,16 @@ whatlang = "0.16"
 # Random (для живости бота)
 rand = "0.8"
 
+# Lazy static initialization
+lazy_static = "1.4"
+once_cell = "1.19"
+
 # Persistent storage
 sled = "0.34"
 bincode = "1.3"
+
+# Cryptography (for cache key hashing)
+sha2 = "0.10"
 
 # 🪙 Solana blockchain integration
 solana-client = "2.3.0"
@@ -74,6 +81,7 @@ shellexpand = "3.1" # Shell path expansion (~/.config/solana/id.json)
 tempfile = "3.8"
 regex = "1.12.2"
 log = "0.4.28"
+sqlx = { version = "0.8.6", features = ["postgres", "runtime-tokio-rustls", "macros", "uuid", "chrono"] }
 
 [profile.release]
 overflow-checks = true

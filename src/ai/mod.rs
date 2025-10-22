@@ -1,4 +1,5 @@
 pub mod core; // 🧠 Core AI infrastructure (Groq API)
+pub mod cache; // 🗄️ 3-Level AI Response Cache (Memory + Sled + API)
 pub mod control; // 🎛️ AI Control Layer (security, monitoring, access control)
 pub mod agent; // 🤖 Autonomous AI Agent (Copilot-level decision making)
 pub mod business_analyzer; // 💼 Business Brain (market analysis & strategic recommendations)

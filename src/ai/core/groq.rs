@@ -64,7 +64,7 @@ pub enum GroqModel {
 }
 
 impl GroqModel {
-    fn as_str(&self) -> &str {
+    pub fn as_str(&self) -> &str {
         match self {
             GroqModel::Llama70B => "llama-3.3-70b-versatile",  // Updated to 3.3
             GroqModel::Llama8B => "llama-3.1-8b-instant",
@@ -74,6 +74,7 @@ impl GroqModel {
 }
 
 /// Groq client configuration
+#[derive(Clone)]
 pub struct GroqConfig {
     pub model: GroqModel,
     pub temperature: f32,
@@ -111,6 +112,10 @@ pub async fn query_groq_with_config(prompt: &str, config: &GroqConfig) -> Result
 pub async fn query_groq_messages(messages: &[Message], config: &GroqConfig) -> Result<String> {
     dotenvy::dotenv().ok();
     
+    // 🚦 Rate limiting: acquire permit before making request
+    let _permit = crate::ai::core::rate_limiter::GLOBAL_RATE_LIMITER.acquire().await;
+    
+    // Get API key (supports multiple keys for load balancing)
     let api_key = env::var("GROQ_API_KEY")
         .context("GROQ_API_KEY not found in environment. Add it to .env or Secrets.toml")?;
 

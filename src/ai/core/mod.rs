@@ -2,6 +2,7 @@
 //! Groq API integration and shared utilities
 
 pub mod groq;
+pub mod rate_limiter;
 
 // Re-export commonly used types
 pub use groq::{
@@ -12,4 +13,10 @@ pub use groq::{
     GroqConfig,
     GroqModel,
     Message,
+};
+
+pub use rate_limiter::{
+    GLOBAL_RATE_LIMITER,
+    GroqRateLimiter,
+    RateLimiterStats,
 };

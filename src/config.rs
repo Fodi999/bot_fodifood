@@ -1,5 +1,8 @@
 use std::env;
 
+pub mod backend_config;
+pub use backend_config::BackendConfig;
+
 #[derive(Debug, Clone)]
 pub struct Config {
     #[allow(dead_code)]
