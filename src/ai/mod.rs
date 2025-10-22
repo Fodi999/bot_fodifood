@@ -10,6 +10,7 @@ pub mod growth_campaign; // 🌱 AI Growth Campaign Engine (autonomous marketing
 pub mod admin_assistant; // 🔧 Admin AI assistant
 pub mod analysis; // 💡 AI-powered business analysis
 pub mod intent_handler; // 🎯 Intent handler system
+pub mod handlers; // 🎯 Intent handlers (fallback, etc.)
 mod intents;
 mod memory;
 pub mod modules;

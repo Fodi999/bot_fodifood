@@ -64,6 +64,20 @@ async fn main(
         tracing::info!("✅ DATABASE_URL loaded");
     }
 
+    // === AI Feature Flags ===
+    if let Some(context_memory) = secrets.get("ENABLE_CONTEXT_MEMORY") {
+        tracing::info!("✅ ENABLE_CONTEXT_MEMORY = {}", context_memory);
+        std::env::set_var("ENABLE_CONTEXT_MEMORY", context_memory);
+    }
+    if let Some(business_ai) = secrets.get("ENABLE_BUSINESS_AI") {
+        tracing::info!("✅ ENABLE_BUSINESS_AI = {}", business_ai);
+        std::env::set_var("ENABLE_BUSINESS_AI", business_ai);
+    }
+    if let Some(market_analytics) = secrets.get("ENABLE_MARKET_ANALYTICS") {
+        tracing::info!("✅ ENABLE_MARKET_ANALYTICS = {}", market_analytics);
+        std::env::set_var("ENABLE_MARKET_ANALYTICS", market_analytics);
+    }
+
     // === Конфигурация ===
     let config = Config::from_env();
     tracing::info!("✅ Конфигурация загружена");

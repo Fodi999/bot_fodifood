@@ -55,6 +55,9 @@ pub fn register_all_handlers(registry: &mut IntentRegistry) {
     // Recommendation handlers
     registry.register(Box::new(recommendations::RecommendationHandler::new()));
 
+    // 🤖 Fallback handler (MUST BE LAST - catches all unknown intents)
+    registry.register(Box::new(crate::ai::handlers::FallbackHandler::new()));
+
     tracing::info!(target: "ai", "✅ Registered {} handlers", registry.count());
     tracing::info!(target: "ai", "📝 Available handlers: {:?}", registry.registered_handlers());
 }
