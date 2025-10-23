@@ -25,6 +25,10 @@ use crate::state::AppState;
 pub struct InsightQuery {
     /// Client identifier (e.g., user_id or session_id)
     pub client_id: Option<String>,
+    /// JWT token (for authentication - optional, legacy frontend support)
+    pub token: Option<String>,
+    /// Channel name (e.g., ui_events - legacy frontend support)
+    pub channel: Option<String>,
 }
 
 /// WebSocket endpoint for AI insights
@@ -38,11 +42,17 @@ pub async fn ai_insight_ws(
     Query(params): Query<InsightQuery>,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-    let client_id = params.client_id.unwrap_or_else(|| {
-        format!("client_{}", uuid::Uuid::new_v4())
-    });
+    // Support both client_id and channel (for frontend compatibility)
+    let client_id = params.client_id
+        .or(params.channel.clone())
+        .unwrap_or_else(|| format!("client_{}", uuid::Uuid::new_v4()));
 
-    tracing::info!("📡 AI Insight WebSocket upgrade request from: {}", client_id);
+    tracing::info!(
+        "📡 AI Insight WebSocket upgrade request from: {} (channel: {:?}, token: {})",
+        client_id,
+        params.channel,
+        params.token.is_some()
+    );
 
     ws.on_upgrade(move |socket| handle_insight_socket(socket, client_id, state))
 }
@@ -76,6 +86,8 @@ mod tests {
     fn test_query_parsing() {
         let query = InsightQuery {
             client_id: Some("user123".to_string()),
+            token: None,
+            channel: None,
         };
 
         assert_eq!(query.client_id.unwrap(), "user123");

@@ -9,6 +9,7 @@ use crate::state::AppState;
 #[allow(dead_code)] // Fields are used by handlers, but rustc doesn't always detect it
 pub struct Context {
     pub user_id: String,
+    pub username: Option<String>, // 👤 Optional user display name for personalization
     pub message: String,
     pub intent: String,
     pub entities: Vec<String>,
@@ -22,11 +23,17 @@ impl Context {
     pub fn new(user_id: String, message: String, intent: String) -> Self {
         Self {
             user_id,
+            username: None,
             message,
             intent,
             entities: Vec::new(),
             metadata: HashMap::new(),
         }
+    }
+
+    pub fn with_username(mut self, username: Option<String>) -> Self {
+        self.username = username;
+        self
     }
 
     pub fn with_entities(mut self, entities: Vec<String>) -> Self {

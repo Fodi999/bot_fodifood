@@ -173,17 +173,9 @@ async fn create_business(
         }
     };
 
-    // Проверяем, что пользователь имеет права на создание бизнеса
+    // ✅ Любой авторизованный пользователь может создать бизнес
     let user_role = verify_response.role.as_deref().unwrap_or("client");
-    if user_role != "admin" && user_role != "business_owner" {
-        tracing::warn!("❌ User role {} not allowed to create business", user_role);
-        return Err((
-            axum::http::StatusCode::FORBIDDEN,
-            "Only admin or business_owner can create businesses".to_string(),
-        ));
-    }
-
-    tracing::info!("✅ Token verified for user with role: {}", user_role);
+    tracing::info!("✅ Token verified for user with role: {} - allowing business creation", user_role);
 
     // Отправляем запрос в Go backend
     let go_api = &state.config.go_backend_url;

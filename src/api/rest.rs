@@ -15,6 +15,9 @@ use crate::state::AppState;
 pub struct ChatRequest {
     pub user_id: String,
     pub message: String,
+    /// Имя пользователя (опционально, для персонализации ответов)
+    #[serde(default)]
+    pub username: Option<String>,
 }
 
 /// 🤖 Ответ от AI бота
@@ -532,7 +535,7 @@ pub async fn chat_handler(
     // 🚀 NEW: Process through plugin system with backend integration
     let response = state
         .ai
-        .process_with_plugins(&req.user_id, &req.message, &state)
+        .process_with_plugins(&req.user_id, &req.message, req.username.clone(), &state)
         .await
         .map_err(|e| {
             tracing::error!("❌ AI processing error: {}", e);

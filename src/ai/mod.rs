@@ -416,6 +416,7 @@ impl AIEngine {
         &self,
         user_id: &str,
         message: &str,
+        username: Option<String>, // 👤 Optional username for personalization
         state: &crate::state::AppState,
     ) -> Result<String> {
         // 💬 Smalltalk check first (highest priority)
@@ -453,7 +454,8 @@ impl AIEngine {
             user_id.to_string(),
             message.to_string(),
             intent_str,
-        );
+        )
+        .with_username(username);
 
         // 📦 Extract entities (simple for now)
         if let Some(ingredient) = Thinker::extract_ingredient(message) {

@@ -1,5 +1,5 @@
-use fodifood_bot::{api, config, handlers, state};
-// Note: bank, nft, wallet, solana modules available in local mode (src/bin/local.rs)
+use fodifood_bot::{api, config, handlers, state, bank};
+// Note: nft, wallet, solana modules available in local mode (src/bin/local.rs)
 
 use shuttle_axum::axum::{
     extract::State,
@@ -78,6 +78,20 @@ async fn main(
         std::env::set_var("ENABLE_MARKET_ANALYTICS", market_analytics);
     }
 
+    // === Solana Configuration ===
+    if let Some(fodi_mint) = secrets.get("FODI_MINT_ADDRESS") {
+        std::env::set_var("FODI_MINT_ADDRESS", &fodi_mint);
+        tracing::info!("✅ FODI_MINT_ADDRESS loaded: {}", fodi_mint);
+    }
+    if let Some(solana_network) = secrets.get("SOLANA_NETWORK") {
+        std::env::set_var("SOLANA_NETWORK", &solana_network);
+        tracing::info!("✅ SOLANA_NETWORK = {}", solana_network);
+    }
+    if let Some(solana_rpc) = secrets.get("SOLANA_RPC_URL") {
+        std::env::set_var("SOLANA_RPC_URL", &solana_rpc);
+        tracing::info!("✅ SOLANA_RPC_URL loaded");
+    }
+
     // === Конфигурация ===
     let config = Config::from_env();
     tracing::info!("✅ Конфигурация загружена");
@@ -137,6 +151,19 @@ async fn main(
         tracing::info!("⚠️  Multi-Agent system disabled (set ORCHESTRATOR_ENABLED=true in Secrets.toml)");
     }
 
+    // 💰 Initialize Bank Ledger (persistent storage on Shuttle)
+    let db_path = secrets.get("DB_PATH").unwrap_or("/tmp/fodi_ledger.db".to_string());
+    tracing::info!("💾 Initializing bank ledger at: {}", db_path);
+    
+    let shared_ledger = Arc::new(
+        bank::ledger::TokenLedger::with_persistence(&db_path)
+            .unwrap_or_else(|e| {
+                tracing::warn!("⚠️ Failed to load ledger from {}: {}", db_path, e);
+                tracing::info!("📝 Creating new in-memory ledger");
+                bank::ledger::TokenLedger::new()
+            })
+    );
+
     // === Роутер ===
     let app = Router::new()
         // 🏠 Базовые endpoints
@@ -152,7 +179,7 @@ async fn main(
         .route("/api/v1/user/profile", get(api::rest::get_user_profile))
         // 💼 Business Management - merged routes from businesses module
         .merge(api::businesses::routes())
-        // Note: Solana API available in local mode only
+        // Note: Solana, NFT, Wallet APIs available in local mode only
         // 👨‍💼 Admin Endpoints
         .route("/api/v1/admin/stats", get(api::rest::get_admin_stats))
         .route(
@@ -182,6 +209,7 @@ async fn main(
         .route("/admin/metrics/stats", get(api::metrics::metrics_stats))
         // �💬 Chat & AI
         .route("/api/v1/chat", post(api::rest::chat_handler))
+        .route("/api/v1/chat/message", post(api::rest::chat_handler)) // Frontend alias
         .route("/api/v1/search", get(api::rest::search_by_ingredient))
         .route(
             "/api/v1/recommendations",
@@ -191,14 +219,20 @@ async fn main(
         // 🔌 WebSocket & Webhooks
         .route("/ws", get(handlers::ws::websocket_handler))
         .route("/api/v1/insight", get(api::insight_ws::ai_insight_ws)) // 📡 AI Insights
+        .route("/insight", get(api::insight_ws::ai_insight_ws)) // Legacy WebSocket endpoint
         .route("/notify", post(handlers::webhook::webhook_handler))
         .layer(CorsLayer::permissive())
         .with_state(state);
 
+    // 💰 Add Bank API as separate router (doesn't need AppState)
+    let bank_routes = bank::api::routes_with_ledger(shared_ledger);
+    let app = app.nest("/api/bank", bank_routes);
+
     tracing::info!("🤖 FodiFood Bot API запущен и готов!");
     tracing::info!("📡 REST API v1 доступен по адресу /api/v1/*");
     tracing::info!("👨‍💼 Admin endpoints: /api/v1/admin/*");
-    // Note: Bank & NFT APIs available in local mode only (src/bin/local.rs)
+    tracing::info!("💰 Bank API: /api/bank/*");
+    // Note: NFT & Wallet APIs available in local mode only (src/bin/local.rs)
 
     Ok(app.into())
 }

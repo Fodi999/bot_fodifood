@@ -19,8 +19,15 @@ impl IntentHandler for FallbackHandler {
     }
 
     fn can_handle(&self, ctx: &Context) -> bool {
-        // Handle ALL unknown intents
-        ctx.intent == "unknown" || ctx.intent.is_empty()
+        // This is a catch-all fallback - always returns true
+        // It will be used ONLY if no other handler matched
+        // (thanks to low priority)
+        true
+    }
+
+    fn priority(&self) -> u8 {
+        // Lowest priority - only used if nothing else matches
+        0
     }
 
     async fn handle(&self, input: &str, ctx: &mut Context, _state: &AppState) -> Option<String> {
@@ -37,19 +44,29 @@ impl IntentHandler for FallbackHandler {
             }
         };
 
-        // Build context-aware prompt
+        // Build context-aware prompt with real menu context
         let system_prompt = "Ты — дружелюбный AI-ассистент FodiFood, платформы доставки еды. \
             Твоя задача — помогать пользователям с заказами, меню, вопросами о еде и токенах FODI. \
-            Отвечай кратко, по делу, дружелюбно. Если не знаешь — признайся честно.";
+            \n\n📋 Наше реальное меню:\
+            \n- Роллы: Филадельфия (450₽), Калифорния (380₽)\
+            \n- Пицца: Маргарита (350₽), Пепперони (420₽)\
+            \n- Супы: Том Ям (320₽)\
+            \n- Напитки: Coca-Cola (90₽)\
+            \n\nОтвечай кратко, по делу, дружелюбно. Если не знаешь — признайся честно.";
+
+        // Build user greeting (use username if available)
+        let greeting = if let Some(ref name) = ctx.username {
+            format!("Пользователь {} написал", name)
+        } else {
+            "Пользователь написал".to_string()
+        };
 
         let user_prompt = format!(
-            "Пользователь написал: \"{}\"\n\n\
-            Контекст:\n\
-            - User ID: {}\n\
-            - Intent: {}\n\n\
+            "{}: \"{}\"\n\n\
+            Контекст:Intent = {}\n\n\
             Дай краткий, полезный ответ (1-3 предложения):",
+            greeting,
             input,
-            ctx.user_id,
             ctx.intent
         );
 

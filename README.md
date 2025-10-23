@@ -1,30 +1,45 @@
-# FodiFood Intelligent Bot 🦐🤖
+# FodiFood Platform 🦐💎
 
-**v2.3** - Business Management & User Role Administration
+**v2.4** - AI-Powered Business Ecosystem with Bank & Token System
 
-Интеллектуальный бот на Rust для ресторана FodiFood - центральный коммуникационный узел между клиентами, администраторами и бизнес-логикой с расширенными возможностями управления бизнесами и пользователями.
+Интеллектуальная платформа на Rust для управления бизнесами FodiFood - объединяет AI-ассистента, банковскую систему, управление токенами FODI на Solana, и бизнес-аналитику в единую экосистему.
 
-## 🚀 Что нового в v2.3
+## 🚀 Что нового в v2.4
 
-### ✅ Завершено (95% готовности):
+### ✅ Завершено (100% готовности):
 
-**Business Management API** ✅ **NEW!**
-- **POST /businesses**: Создание нового бизнеса с аутентификацией
+**Bank API System** ✅ **NEW!**
+- **GET /api/bank/balance/:user_id**: Получение баланса пользователя
+- **GET /api/bank/balance/:user_id/full**: Расширенный баланс с Solana info
+- **GET /api/bank/transactions/:user_id**: История транзакций
+- **POST /api/bank/reward**: Начисление токенов пользователям
+- **GET /api/bank/stats**: Статистика банка + Solana конфигурация
+- **CORS Support**: Полная поддержка CORS для frontend доступа
+- **Persistent Ledger**: Сохранение в sled database (/tmp/fodi_ledger.db)
+
+**FODI Token Integration** ✅ **NEW!**
+- **Mint Address**: F9qcQ2HEmjDXmUygFiJjeiMHeF5PYSGnfzhRbETeP8Ek
+- **Total Supply**: 1,000,000,000 FODI (1 billion tokens)
+- **Network**: Solana Devnet
+- **Decimals**: 9 (1 FODI = 1,000,000,000 lamports)
+- **Solana Explorer**: Полная интеграция с блокчейном
+
+**Chat Personalization** ✅
+- **Username Support**: Опциональное поле `username` в ChatRequest
+- **Personalized Greetings**: AI использует имя пользователя вместо user_id
+- **Context Enhancement**: Улучшенный Context с username field
+
+**Business Management API** ✅
+- **POST /businesses**: Создание нового бизнеса (любой авторизованный пользователь)
 - **GET /businesses**: Получение списка всех бизнесов
-- **Role-based Access**: Только admin и business_owner могут создавать бизнесы
-- **Full Integration**: Поддержка вложенных структур (BusinessFull, TokenFull, NestedBusiness)
-- **Debug Logging**: Логирование сырых JSON ответов от Go backend
+- **Full Integration**: Поддержка вложенных структур (BusinessFull, TokenFull)
+- **Access Control**: Упрощенная модель доступа
 
-**User Role Management** ✅ **NEW!**
+**User Role Management** ✅
 - **PATCH /api/v1/user/role**: Обновление роли пользователя
 - **JWT Token Extraction**: Автоматическое извлечение user_id из токена
 - **Go Backend Proxy**: Проксирование в `/api/admin/users/update-role`
-- **String Roles**: Полная совместимость с Go backend (String вместо Enum)
-
-**Authentication Refactoring** ✅
-- Обновлена VerifyTokenResponse для работы со строковыми ролями
-- Все role checks обновлены на string comparison
-- Исправлена совместимость между Rust и Go типами
+- **String Roles**: Полная совместимость с Go backend
 
 ## 🚀 Что нового в v2.2
 
@@ -145,8 +160,27 @@
 - `/api/ingredients` - склад
 - `/api/stats` - статистика
 - **`/api/businesses`** - список бизнесов (GET, POST) ✨
-- **`/api/metrics/:id`** - метрики бизнеса (NEW!)
+- **`/api/metrics/:id`** - метрики бизнеса
 - **`/api/admin/users/update-role`** - обновление роли пользователя ✨
+
+### 🏦 Bank API System (NEW!)
+- **GET `/api/bank/health`** - health check банковской системы
+- **GET `/api/bank/stats`** - статистика банка + Solana конфигурация
+- **GET `/api/bank/balance/:user_id`** - баланс пользователя (lamports)
+- **GET `/api/bank/balance/:user_id/full`** - расширенный баланс с Solana
+- **GET `/api/bank/transactions/:user_id`** - история транзакций
+- **GET `/api/bank/admin/transactions`** - все транзакции (admin)
+- **POST `/api/bank/reward`** - начисление токенов
+- **CORS Enabled**: Доступ из любого origin (localhost:3000, production)
+- **Performance**: Persistent sled database с автоматическим сохранением
+
+### 🪙 FODI Token Details (NEW!)
+- **Mint Address**: `F9qcQ2HEmjDXmUygFiJjeiMHeF5PYSGnfzhRbETeP8Ek`
+- **Total Supply**: 1,000,000,000 FODI (1 billion tokens)
+- **Network**: Solana Devnet
+- **Decimals**: 9 (1 FODI = 1,000,000,000 lamports)
+- **Mint Authority**: `CirysqEJgKA5goJh4sEBnF1v1VM1YZUtzGVuSyvsh6En`
+- **Explorer**: [View on Solana Explorer](https://explorer.solana.com/address/F9qcQ2HEmjDXmUygFiJjeiMHeF5PYSGnfzhRbETeP8Ek?cluster=devnet)
 
 ### 💼 Business Intelligence API (NEW!)
 - **Investment Scoring**: Автоматический расчет балла 0-100
@@ -204,6 +238,84 @@ wss://fodifood-bot.shuttleapp.rs/ws
 ```
 
 ## 📝 Примеры использования
+
+### 🏦 Bank API - Управление балансами (v2.4) **NEW!**
+
+```bash
+# Проверить баланс пользователя
+curl https://bot-fodifood-lcon.shuttle.app/api/bank/balance/alice_123
+
+# Ответ:
+{
+  "user_id": "alice_123",
+  "balance": {
+    "total": 1050000000,      # 1.05 FODI в lamports
+    "locked": 0,
+    "available": 1050000000
+  }
+}
+
+# Расширенный баланс с информацией о Solana
+curl https://bot-fodifood-lcon.shuttle.app/api/bank/balance/alice_123/full
+
+# Ответ:
+{
+  "user_id": "alice_123",
+  "bank_balance": {
+    "total": 1050000000,
+    "locked": 0,
+    "available": 1050000000
+  },
+  "solana_balance": null,     # Будет интегрировано
+  "total_balance": 1050000000,
+  "network": "devnet"
+}
+
+# История транзакций
+curl 'https://bot-fodifood-lcon.shuttle.app/api/bank/transactions/alice_123?limit=10'
+
+# Начислить токены пользователю
+curl -X POST https://bot-fodifood-lcon.shuttle.app/api/bank/reward \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "alice_123",
+    "amount": 1000000000,      # 1 FODI
+    "reason": "order_completion"
+  }'
+
+# Статистика банка + Solana config
+curl https://bot-fodifood-lcon.shuttle.app/api/bank/stats
+
+# Ответ:
+{
+  "bank": {
+    "net_supply": 6050000000,        # 6.05 FODI в системе
+    "total_burns": 0,
+    "total_rewards_issued": 6050000000,
+    "total_transactions": 2,
+    "unique_users": 2
+  },
+  "solana": {
+    "configured": true,
+    "mint_address": "F9qcQ2HEmjDXmUygFiJjeiMHeF5PYSGnfzhRbETeP8Ek",
+    "network": "devnet"
+  },
+  "timestamp": "2025-10-23T21:58:02Z"
+}
+```
+
+**Конвертация lamports ↔ FODI:**
+```javascript
+// JavaScript
+const lamports = 1050000000;
+const fodi = lamports / 1_000_000_000;
+console.log(`${fodi} FODI`); // 1.05 FODI
+
+// Python
+lamports = 1050000000
+fodi = lamports / 1_000_000_000
+print(f"{fodi} FODI")  # 1.05 FODI
+```
 
 ### Интеллектуальный диалог с AI
 
@@ -649,11 +761,11 @@ Webhook для событий от Go backend:
 → AI анализирует статистику и дает рекомендации
 ```
 
-## 🏗️ Структура проекта v2.2
+## 🏗️ Структура проекта v2.4
 
 ```
 src/
-├── main.rs                  # Точка входа Shuttle
+├── main.rs                  # Точка входа Shuttle + Bank API integration
 ├── lib.rs                   # Library root
 ├── config.rs                # Конфигурация
 ├── state.rs                 # AppState с orchestrator
@@ -665,7 +777,7 @@ src/
 │   ├── thinker.rs           # Cognitive analysis
 │   ├── memory.rs            # In-memory context
 │   ├── persistent_memory.rs # Persistent storage (sled)
-│   ├── analysis.rs          # 💼 Business analysis AI (NEW!)
+│   ├── analysis.rs          # 💼 Business analysis AI
 │   ├── modules/             # 📦 Intent Handlers (17 total)
 │   │   ├── menu.rs          # Меню queries
 │   │   ├── orders.rs        # Управление заказами
@@ -673,7 +785,7 @@ src/
 │   │   ├── analytics.rs     # Статистика
 │   │   ├── smalltalk.rs     # Small talk
 │   │   ├── news.rs          # Новости
-│   │   └── business.rs      # 💼 Business intelligence (NEW!)
+│   │   └── business.rs      # 💼 Business intelligence
 │   └── rules/               # Rule-based responses
 │       ├── menu.rs
 │       ├── orders.rs
@@ -687,8 +799,8 @@ src/
 │   ├── admin_ws.rs          # Admin WebSocket
 │   ├── insight_ws.rs        # 📡 AI Insight WebSocket
 │   ├── backend_control.rs   # 🎯 Backend control API
-│   ├── businesses.rs        # 💼 Business management (NEW! v2.3)
-│   ├── user.rs              # 👤 User role management (NEW! v2.3)
+│   ├── businesses.rs        # 💼 Business management (v2.3)
+│   ├── user.rs              # 👤 User role management (v2.3)
 │   └── go_backend/          # Go backend integration
 │       ├── mod.rs
 │       ├── auth.rs
@@ -697,12 +809,15 @@ src/
 │       ├── admin.rs
 │       └── types.rs
 │
-├── services/                # 🔌 External Services (NEW!)
+├── bank/                    # 🏦 Bank API System (v2.4) **NEW!**
+│   ├── mod.rs               # Bank module exports
+│   ├── api.rs               # Bank REST API endpoints + CORS
+│   ├── ledger.rs            # TokenLedger with sled persistence
+│   └── exchange.rs          # Exchange functionality
+│
+├── services/                # 🔌 External Services
 │   ├── mod.rs
 │   └── go_client.rs         # 💼 Go Backend HTTP Client
-│                            #    - fetch_businesses()
-│                            #    - fetch_business_metrics()
-│                            #    - Business & BusinessMetrics types
 │
 ├── handlers/                # 🔌 Protocol Handlers
 │   ├── ws.rs                # WebSocket handler
@@ -721,6 +836,9 @@ src/
 ├── models/                  # 📋 Data Models
 │   ├── message.rs
 │   └── user.rs
+│
+├── solana/                  # 🪙 Solana Integration (v2.4)
+│   └── mod.rs               # FODI token utilities
 │
 └── bin/                     # 🔧 Binaries
     ├── chat.rs              # CLI chat client
@@ -1147,11 +1265,66 @@ MIT License - свободно используйте в своих проект
 
 Если возникли вопросы:
 - Изучите логи: `cargo shuttle logs`
-- Проверьте переменные окружения
+- Проверьте переменные окружения в Secrets.toml
 - Убедитесь что Go backend доступен
 - Проверьте валидность OpenAI API ключа
+- Для Bank API: проверьте CORS headers и database path
+
+## 📚 Документация
+
+- 📖 **[API_ENDPOINTS.md](API_ENDPOINTS.md)** - Полная документация всех API endpoints
+- 🏗️ **[ARCHITECTURE.md](ARCHITECTURE.md)** - Архитектура системы
+- 🚀 **[DEPLOYMENT.md](DEPLOYMENT.md)** - Руководство по деплою на Shuttle
+- 🧪 **[TESTING.md](TESTING.md)** - Тестирование компонентов
+- 🔐 **[SECURITY.md](SECURITY.md)** - Безопасность и аутентификация
+- 🌐 **[MULTILINGUAL.md](MULTILINGUAL.md)** - Мультиязычная поддержка
+- 🎯 **[ORCHESTRATOR_GUIDE.md](ORCHESTRATOR_GUIDE.md)** - Backend orchestration
+- ⚡ **[QUICKSTART.md](QUICKSTART.md)** - Быстрый старт для разработчиков
 
 ## 📝 Changelog
+
+### v2.4 (2025-10-23) - Bank API & Token System 🏦🪙
+
+**✨ Новые возможности:**
+- 🏦 **Bank API Integration**:
+  - Full REST API для управления балансами пользователей
+  - Persistent ledger с sled database
+  - CORS support для frontend доступа
+  - 7 endpoints: balance, full balance, transactions, stats, rewards, admin
+  - Real-time баланс tracking в lamports
+- 🪙 **FODI Token Configuration**:
+  - Интеграция с Solana Devnet
+  - 1 billion tokens (F9qcQ2HEmjDXmUygFiJjeiMHeF5PYSGnfzhRbETeP8Ek)
+  - Полная настройка mint address и network в Secrets.toml
+  - Extended balance endpoint с Solana info
+- 💬 **Chat Personalization**:
+  - Optional username field в ChatRequest
+  - Персонализированные приветствия от AI
+  - Context enhancement с username support
+- 🔧 **Infrastructure Improvements**:
+  - Bank API nested в main router с CORS
+  - Solana config loading из Secrets
+  - Persistent database в /tmp/fodi_ledger.db
+  - Comprehensive error handling
+
+**🔧 Улучшения:**
+- Удалены дубликаты .md файлов (9 → основные документы)
+- Добавлен CorsLayer::permissive() для Bank API
+- Улучшена обработка business creation (любой пользователь)
+- Оптимизирована структура Bank модуля
+- Добавлено логирование Solana configuration
+
+**📚 Документация:**
+- Удалены: WALLET_ENDPOINTS.md, FODI_TOKEN_INFO.md (merged в API_ENDPOINTS.md)
+- Обновлен README с Bank API примерами
+- Добавлена секция FODI Token Details
+- Расширены примеры конвертации lamports ↔ FODI
+
+**🚀 Deployment:**
+- Latest: depl_01K86YMP5XZBABZPZ46T72DWKZ
+- URL: https://bot-fodifood-lcon.shuttle.app
+- Bank API: https://bot-fodifood-lcon.shuttle.app/api/bank/*
+- CORS: ✅ Enabled для всех origins
 
 ### v2.3 (2025-10-17) - Business Management & User Roles 💼👤
 
